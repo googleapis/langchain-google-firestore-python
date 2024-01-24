@@ -2,6 +2,7 @@
     "name": "langchain-google-firestore",
     "name_pretty": "LangChain Google Firestore - Python",
     "issue_tracker": "https://github.com/googleapis/langchain-google-firestore-python/issues",
+    "client_documentation": "https://github.com/googleapis/langchain-google-firestore-python/tree/main/docs",
     "release_level": "preview",
     "language": "python",
     "library_type": "OTHER",
