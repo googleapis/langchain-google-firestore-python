@@ -35,7 +35,7 @@ class DocumentConverter():
                                  page_content_fields: List[str] = None,
                                  metadata_fields: List[str] = None) -> Document:
         data_doc = document.to_dict()
-        metadata = {'reference': document.reference.path}
+        metadata = {'reference': {"path": document.reference.path}}
         if page_content_fields:
             set_page_fields = set(page_content_fields)
         else:
@@ -47,23 +47,29 @@ class DocumentConverter():
         shared_keys = set_metadata_fields & set_page_fields
 
         page_content = {}
-        for k in shared_keys:
+        for k in sorted(shared_keys):
             if k in data_doc:
                 val = DocumentConverter._convertFromFirestore(data_doc.pop(k))
                 page_content[k] = val
                 metadata[k] = val
 
-        metadata.update({k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in (set_metadata_fields-shared_keys) if k in data_doc})
+        metadata.update({k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in sorted(set_metadata_fields-shared_keys) if k in data_doc})
 
         if not set_page_fields:
             # write all fields
-            page_content = {k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in data_doc.keys()}
+            keys = sorted(data_doc.keys())
+            page_content = {k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in keys}
         else:
-            page_content.update({k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in (set_page_fields-shared_keys) if k in data_doc})
+            page_content.update({k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in sorted(set_page_fields-shared_keys) if k in data_doc})
+
+        if len(page_content) == 1:
+          page_content = page_content.popitem()[1]
 
         if not set_metadata_fields:
             # metadata fields not specified. Write remaining fields into metadata
-            metadata.update({k: DocumentConverter._convertFromFirestore(v) for k,v in data_doc.items()})
+            metadata.update({k: DocumentConverter._convertFromFirestore(v) for k,v in sorted(data_doc.items())})
+
+        return Document(page_content=str(page_content), metadata=metadata)
 
     @staticmethod
     def _convertFromFirestore(val):
@@ -72,11 +78,12 @@ class DocumentConverter():
             from google.cloud.firestore_v1._helpers import GeoPoint
         except ImportError:
             raise ImportError(IMPORT_ERROR_MSG)
-        
+
+        val_converted = val
         if isinstance(val, DocumentReference):
-            val_converted = val
+            val_converted = {'path': val.path}
         elif isinstance(val, GeoPoint):
-            val_converted = val
+            val_converted = {'latitude': val.latitude, 'longitude': val.longitude}
         elif isinstance(val, dict):
             val_converted = {k: DocumentConverter._convertFromFirestore(v) for k,v in val.items()}
             pass

@@ -24,7 +24,7 @@ from typing import (
 
 from langchain_core.documents import Document
 from langchain_community.document_loaders.base import BaseLoader
-from utility.document_converter import DocumentConverter
+from .utility.document_converter import DocumentConverter
 
 DEFAULT_FIRESTORE_DATABASE = "(default)"
 USER_AGENT = "LangChain"

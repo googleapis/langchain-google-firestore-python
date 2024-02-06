@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from langchain_google_firestore.utility.document_converter import DocumentConverter
 from langchain_google_firestore.document_loader import FirestoreLoader
+from langchain_google_firestore.utility.document_converter import DocumentConverter
 
-__all__ = ["DocumentConverter", "FirestoreLoader"]
+__all__ = ["FirestoreLoader"]
