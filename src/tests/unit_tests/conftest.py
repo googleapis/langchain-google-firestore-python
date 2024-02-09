@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from langchain_google_firestore.document_loader import FirestoreLoader, FirestoreSaver
-from langchain_google_firestore.utility.document_converter import DocumentConverter
+import pytest
+from google.cloud import firestore
+from unittest import TestCase
 
-__all__ = ["FirestoreLoader", "FirestoreSaver"]
+def pytest_configure():
+  pytest.client = firestore.Client()
+  pytest.case = TestCase()

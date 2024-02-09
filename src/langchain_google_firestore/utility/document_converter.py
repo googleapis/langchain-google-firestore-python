@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import ast
+
 from typing import (
     TYPE_CHECKING,
     List,
@@ -26,7 +28,9 @@ IMPORT_ERROR_MSG = (
 )
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
+    from google.cloud.firestore_v1.document import DocumentReference
 
 class DocumentConverter():
 
@@ -35,7 +39,8 @@ class DocumentConverter():
                                  page_content_fields: List[str] = None,
                                  metadata_fields: List[str] = None) -> Document:
         data_doc = document.to_dict()
-        metadata = {'reference': {"path": document.reference.path}}
+        metadata = {'reference': {'path': document.reference.path}}
+
         if page_content_fields:
             set_page_fields = set(page_content_fields)
         else:
@@ -72,7 +77,30 @@ class DocumentConverter():
         return Document(page_content=str(page_content), metadata=metadata)
 
     @staticmethod
-    def _convertFromFirestore(val):
+    def convertLangChainDocument(document: Document, client: Client) -> dict:
+      metadata = document.metadata
+      path = None
+      data = {}
+
+      if metadata:
+        data.update(
+            DocumentConverter._convertFromLangChain(metadata, client))
+      if ('reference' in metadata) and ('path' in metadata['reference']) and (len(metadata['reference']) == 1):
+        path = metadata['reference']['path']
+        data.pop('reference')
+
+      if document.page_content:
+        try:
+          content_dict = ast.literal_eval(document.page_content)
+        except (ValueError, SyntaxError):
+          content_dict = {'page_content': document.page_content}
+        converted_page = DocumentConverter._convertFromLangChain(content_dict, client)
+        data.update(converted_page)
+
+      return {'path': path, 'data': data}
+
+    @staticmethod
+    def _convertFromFirestore(val: Any) -> Any:
         try:
             from google.cloud.firestore_v1.document import DocumentReference
             from google.cloud.firestore_v1._helpers import GeoPoint
@@ -86,8 +114,31 @@ class DocumentConverter():
             val_converted = {'latitude': val.latitude, 'longitude': val.longitude}
         elif isinstance(val, dict):
             val_converted = {k: DocumentConverter._convertFromFirestore(v) for k,v in val.items()}
-            pass
         elif isinstance(val, list):
             val_converted = [DocumentConverter._convertFromFirestore(v) for v in val]
 
         return val_converted
+
+    @staticmethod
+    def _convertFromLangChain(val: Any, client: Client) -> Any:
+        try:
+            from google.cloud.firestore_v1.document import DocumentReference
+            from google.cloud.firestore_v1._helpers import GeoPoint
+        except ImportError:
+            raise ImportError(IMPORT_ERROR_MSG)
+
+        val_converted = val
+        if isinstance(val, dict):
+            l = len(val)
+            if (l == 1) and ('path' in val):
+              val_converted = DocumentReference(*val['path'].split('/'), client=client)
+            elif (l == 2) and ('latitude' in val) and ('longitude' in val):
+              val_converted = GeoPoint(val['latitude'], val['longitude'])
+            else:
+              val_converted = {k: DocumentConverter._convertFromLangChain(v, client) for k,v in val.items()}
+        elif isinstance(val, list):
+            val_converted = [DocumentConverter._convertFromLangChain(v, client) for v in val]
+
+        return val_converted
+
+
