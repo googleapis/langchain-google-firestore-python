@@ -212,7 +212,7 @@ class FirestoreSaver:
 
         """
         try:
-            from google.cloud.firestore_v1.document import DocumentReference
+            from google.cloud.firestore import DocumentReference
         except ImportError:
             raise ImportError(IMPORT_ERROR_MSG)
 
