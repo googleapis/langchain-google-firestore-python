@@ -16,6 +16,7 @@ import pytest
 from google.cloud import firestore
 from unittest import TestCase
 
+
 def pytest_configure():
-  pytest.client = firestore.Client()
-  pytest.case = TestCase()
+    pytest.client = firestore.Client()
+    pytest.case = TestCase()

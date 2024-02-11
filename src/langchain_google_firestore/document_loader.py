@@ -34,17 +34,16 @@ IMPORT_ERROR_MSG = (
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
-    from google.cloud.firestore_v1.client import Client
-    from google.cloud.firestore_v1.document import DocumentReference
-    from google.cloud.firestore_v1.query import Query, CollectionGroup
+    from google.cloud.firestore import Client, DocumentReference, Query, CollectionGroup
+
 
 class FirestoreLoader(BaseLoader):
     def __init__(
         self,
-        source: Query|CollectionGroup|DocumentReference|str,
+        source: Query | CollectionGroup | DocumentReference | str,
         page_content_fields: List[str] = None,
         metadata_fields: Optional[List[str]] = None,
-        client: Optional[Client] = None
+        client: Optional[Client] = None,
     ) -> None:
         """Document Loader for Google Cloud Firestore.
         Args:
@@ -57,7 +56,7 @@ class FirestoreLoader(BaseLoader):
             metadata_fields: The document field names to write into the `metadata`.
                 By default it will write all fields that are not in `page_content` into `metadata`.
             client: Client for interacting with the Google Cloud Firestore API.
-            """
+        """
         try:
             from google.cloud import firestore
             from google.cloud.firestore_v1.services.firestore.transports.base import (
@@ -92,7 +91,7 @@ class FirestoreLoader(BaseLoader):
             self.source._client._client_info.user_agent = USER_AGENT
             doc = self._load_document()
             if doc:
-              yield self._load_document()
+                yield self._load_document()
             return
         elif isinstance(self.source, str):
             query = self.client.collection(self.source)
@@ -102,129 +101,145 @@ class FirestoreLoader(BaseLoader):
         query._client._client_info.user_agent = USER_AGENT
 
         for document_snapshot in query.stream():
-          yield DocumentConverter.convertFirestoreDocument(document_snapshot, self.page_content_fields, self.metadata_fields)
+            yield DocumentConverter.convertFirestoreDocument(
+                document_snapshot, self.page_content_fields, self.metadata_fields
+            )
 
     def _load_document(self) -> Document:
-      doc = self.source.get()
-      if doc:
-        return DocumentConverter.convertFirestoreDocument(doc)
-      else:
-        return None
+        doc = self.source.get()
+        if doc:
+            return DocumentConverter.convertFirestoreDocument(doc)
+        else:
+            return None
+
 
 class FirestoreSaver:
-  """Write into Google Cloud Platform `Firestore`."""
+    """Write into Google Cloud Platform `Firestore`."""
 
-  def __init__(
-      self,
-      collection: Optional[str] = None,
-      client: Optional[Client] = None,
+    def __init__(
+        self,
+        collection: Optional[str] = None,
+        client: Optional[Client] = None,
     ) -> None:
-    """Document Saver for Google Cloud Firestore.
+        """Document Saver for Google Cloud Firestore.
         Args:
             collection: The single `/`-delimited path to a Firestore collection. If this
               value is present it will write documents with an auto generated id.
             client: Client for interacting with the Google Cloud Firestore API.
-    """
-    try:
-      from google.cloud import firestore
-      from google.cloud.firestore_v1.services.firestore.transports.base import (
-          DEFAULT_CLIENT_INFO,
-      )
-    except ImportError:
-      raise ImportError(IMPORT_ERROR_MSG)
+        """
+        try:
+            from google.cloud import firestore
+            from google.cloud.firestore_v1.services.firestore.transports.base import (
+                DEFAULT_CLIENT_INFO,
+            )
+        except ImportError:
+            raise ImportError(IMPORT_ERROR_MSG)
 
-    self.collection = collection
-    client_info = DEFAULT_CLIENT_INFO
-    client_info.user_agent = USER_AGENT
-    if client:
-      self.client = client
-      self.client._user_agent = USER_AGENT
-    else:
-      self.client = firestore.Client(client_info=client_info)
+        self.collection = collection
+        client_info = DEFAULT_CLIENT_INFO
+        client_info.user_agent = USER_AGENT
+        if client:
+            self.client = client
+            self.client._user_agent = USER_AGENT
+        else:
+            self.client = firestore.Client(client_info=client_info)
 
-  def upsert_documents(self, documents: List[Document], merge: Optional[bool] = False, document_ids: Optional[List[str]] = None) -> None:
-    """Create / merge documents into the Firestore database.
-      Args:
-       documents: List of documents to be written into Firestore.
-       merge: To merge data iwth an existing document (creating if the document does
-        not exist).
-       document_ids: List of document ids to be used. By default it will try to
-        construct the document paths using the `reference` from the Document.
-    """
-    try:
-      from google.cloud.firestore_v1.document import DocumentReference
-    except ImportError:
-      raise ImportError(IMPORT_ERROR_MSG)
+    def upsert_documents(
+        self,
+        documents: List[Document],
+        merge: Optional[bool] = False,
+        document_ids: Optional[List[str]] = None,
+    ) -> None:
+        """Create / merge documents into the Firestore database.
+        Args:
+         documents: List of documents to be written into Firestore.
+         merge: To merge data iwth an existing document (creating if the document does
+          not exist).
+         document_ids: List of document ids to be used. By default it will try to
+          construct the document paths using the `reference` from the Document.
+        """
+        try:
+            from google.cloud.firestore_v1.document import DocumentReference
+        except ImportError:
+            raise ImportError(IMPORT_ERROR_MSG)
 
-    db_batch = self.client.batch()
+        db_batch = self.client.batch()
 
-    if document_ids and (len(document_ids) != len(documents)):
-      raise ValueError("Document ids and docs must have the same size")
+        if document_ids and (len(document_ids) != len(documents)):
+            raise ValueError("Document ids and docs must have the same size")
 
-    if document_ids:
-      docs_list = tuple(zip(documents,document_ids))
-    else:
-      docs_list = documents
-
-    for batch in self._batched(docs_list, WRITE_BATCH_SIZE):
-      for elem in batch:
         if document_ids:
-          doc = elem[0]
-          doc_id = elem[1]
+            docs_list = tuple(zip(documents, document_ids))
         else:
-          doc = elem
-          doc_id = None
-        document_dict = DocumentConverter.convertLangChainDocument(doc, self.client)
-        if self.collection:
-          doc_ref = self.client.collection(self.collection).document()
-        elif doc_id:
-          doc_ref = DocumentReference(*doc_id.split('/'), client=self.client)
-        elif document_dict['path']:
-          doc_ref = DocumentReference(*document_dict['path'].split('/'), client=self.client)
-        else:
-          continue
+            docs_list = documents
 
-        db_batch.set(
-            reference=doc_ref,
-            document_data=document_dict['data'],
-            merge=merge)
-      db_batch.commit()
+        for batch in self._batched(docs_list, WRITE_BATCH_SIZE):
+            for elem in batch:
+                if document_ids:
+                    doc = elem[0]
+                    doc_id = elem[1]
+                else:
+                    doc = elem
+                    doc_id = None
+                document_dict = DocumentConverter.convertLangChainDocument(
+                    doc, self.client
+                )
+                if self.collection:
+                    doc_ref = self.client.collection(self.collection).document()
+                elif doc_id:
+                    doc_ref = DocumentReference(*doc_id.split("/"), client=self.client)
+                elif document_dict["path"]:
+                    doc_ref = DocumentReference(
+                        *document_dict["path"].split("/"), client=self.client
+                    )
+                else:
+                    continue
 
-  def delete_documents(self, documents: List[Document], document_ids: Optional[List[str]] = None) -> None:
-    """Delete documents from the Firestore database.
-      Args:
-        documents: List of documents to be deleted from Firestore. It will try to extract
-          the {document_path} from the `reference` in the document metadata.
-        document_ids: List of documents ids to be deleted from Firestore. If provided
-          the `documents` argument will be ignored.
+                db_batch.set(
+                    reference=doc_ref, document_data=document_dict["data"], merge=merge
+                )
+            db_batch.commit()
 
-    """
-    try:
-      from google.cloud.firestore_v1.document import DocumentReference
-    except ImportError:
-      raise ImportError(IMPORT_ERROR_MSG)
+    def delete_documents(
+        self, documents: List[Document], document_ids: Optional[List[str]] = None
+    ) -> None:
+        """Delete documents from the Firestore database.
+        Args:
+          documents: List of documents to be deleted from Firestore. It will try to extract
+            the {document_path} from the `reference` in the document metadata.
+          document_ids: List of documents ids to be deleted from Firestore. If provided
+            the `documents` argument will be ignored.
 
-    db_batch = self.client.batch()
+        """
+        try:
+            from google.cloud.firestore_v1.document import DocumentReference
+        except ImportError:
+            raise ImportError(IMPORT_ERROR_MSG)
 
-    if document_ids:
-      iter_docs = self._batched(document_ids, WRITE_BATCH_SIZE)
-    else:
-      iter_docs = self._batched(documents, WRITE_BATCH_SIZE)
+        db_batch = self.client.batch()
 
-    for batch in iter_docs:
-      for elem in batch:
         if document_ids:
-          document_path = elem
+            iter_docs = self._batched(document_ids, WRITE_BATCH_SIZE)
         else:
-          document_dict = DocumentConverter.convertLangChainDocument(elem, self.client)
-          document_path = document_dict['path']
-        if not document_path:
-            continue
-        doc_ref = DocumentReference(*document_path.split('/'), client=self.client)
-        db_batch.delete(doc_ref)
-      db_batch.commit()
+            iter_docs = self._batched(documents, WRITE_BATCH_SIZE)
 
-  def _batched(self, lst: List[Any], n: int) -> Iterator[Any]:
-    for i in range(0, len(lst), n):
-      yield lst[i:i+n]
+        for batch in iter_docs:
+            for elem in batch:
+                if document_ids:
+                    document_path = elem
+                else:
+                    document_dict = DocumentConverter.convertLangChainDocument(
+                        elem, self.client
+                    )
+                    document_path = document_dict["path"]
+                if not document_path:
+                    continue
+                doc_ref = DocumentReference(
+                    *document_path.split("/"), client=self.client
+                )
+                db_batch.delete(doc_ref)
+            db_batch.commit()
 
+    def _batched(self, lst: List[Any], n: int) -> Iterator[Any]:
+        for i in range(0, len(lst), n):
+            yield lst[i : i + n]
