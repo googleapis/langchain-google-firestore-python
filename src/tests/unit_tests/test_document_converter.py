@@ -17,9 +17,7 @@ import pytest
 from langchain_core.documents import Document
 from langchain_google_firestore.utility.document_converter import DocumentConverter
 from google.cloud import firestore
-from google.cloud.firestore_v1.base_document import DocumentSnapshot
-from google.cloud.firestore_v1.document import DocumentReference
-from google.cloud.firestore_v1._helpers import GeoPoint
+from google.cloud.firestore import DocumentSnapshot, DocumentReference, GeoPoint
 
 
 @pytest.mark.parametrize(

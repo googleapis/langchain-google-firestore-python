@@ -19,8 +19,7 @@ import unittest.mock as mock
 from langchain_core.documents import Document
 from langchain_google_firestore import FirestoreLoader, FirestoreSaver
 from google.cloud import firestore
-from google.cloud.firestore_v1.query import CollectionGroup
-from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud.firestore import CollectionGroup, FieldFilter
 
 
 def test_firestore_write_roundtrip_and_load() -> None:
