@@ -32,14 +32,17 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.document import DocumentReference
 
-class DocumentConverter():
+
+class DocumentConverter:
 
     @staticmethod
-    def convertFirestoreDocument(document: DocumentSnapshot,
-                                 page_content_fields: List[str] = None,
-                                 metadata_fields: List[str] = None) -> Document:
+    def convertFirestoreDocument(
+        document: DocumentSnapshot,
+        page_content_fields: List[str] = None,
+        metadata_fields: List[str] = None,
+    ) -> Document:
         data_doc = document.to_dict()
-        metadata = {'reference': {'path': document.reference.path}}
+        metadata = {"reference": {"path": document.reference.path}}
 
         if page_content_fields:
             set_page_fields = set(page_content_fields)
@@ -58,46 +61,71 @@ class DocumentConverter():
                 page_content[k] = val
                 metadata[k] = val
 
-        metadata.update({k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in sorted(set_metadata_fields-shared_keys) if k in data_doc})
+        metadata.update(
+            {
+                k: DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                for k in sorted(set_metadata_fields - shared_keys)
+                if k in data_doc
+            }
+        )
 
         if not set_page_fields:
             # write all fields
             keys = sorted(data_doc.keys())
-            page_content = {k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in keys}
+            page_content = {
+                k: DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                for k in keys
+            }
         else:
-            page_content.update({k: DocumentConverter._convertFromFirestore(data_doc.pop(k)) for k in sorted(set_page_fields-shared_keys) if k in data_doc})
+            page_content.update(
+                {
+                    k: DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                    for k in sorted(set_page_fields - shared_keys)
+                    if k in data_doc
+                }
+            )
 
         if len(page_content) == 1:
-          page_content = page_content.popitem()[1]
+            page_content = page_content.popitem()[1]
 
         if not set_metadata_fields:
             # metadata fields not specified. Write remaining fields into metadata
-            metadata.update({k: DocumentConverter._convertFromFirestore(v) for k,v in sorted(data_doc.items())})
+            metadata.update(
+                {
+                    k: DocumentConverter._convertFromFirestore(v)
+                    for k, v in sorted(data_doc.items())
+                }
+            )
 
         return Document(page_content=str(page_content), metadata=metadata)
 
     @staticmethod
     def convertLangChainDocument(document: Document, client: Client) -> dict:
-      metadata = document.metadata
-      path = None
-      data = {}
+        metadata = document.metadata
+        path = None
+        data = {}
 
-      if metadata:
-        data.update(
-            DocumentConverter._convertFromLangChain(metadata, client))
-      if ('reference' in metadata) and ('path' in metadata['reference']) and (len(metadata['reference']) == 1):
-        path = metadata['reference']['path']
-        data.pop('reference')
+        if metadata:
+            data.update(DocumentConverter._convertFromLangChain(metadata, client))
+        if (
+            ("reference" in metadata)
+            and ("path" in metadata["reference"])
+            and (len(metadata["reference"]) == 1)
+        ):
+            path = metadata["reference"]["path"]
+            data.pop("reference")
 
-      if document.page_content:
-        try:
-          content_dict = ast.literal_eval(document.page_content)
-        except (ValueError, SyntaxError):
-          content_dict = {'page_content': document.page_content}
-        converted_page = DocumentConverter._convertFromLangChain(content_dict, client)
-        data.update(converted_page)
+        if document.page_content:
+            try:
+                content_dict = ast.literal_eval(document.page_content)
+            except (ValueError, SyntaxError):
+                content_dict = {"page_content": document.page_content}
+            converted_page = DocumentConverter._convertFromLangChain(
+                content_dict, client
+            )
+            data.update(converted_page)
 
-      return {'path': path, 'data': data}
+        return {"path": path, "data": data}
 
     @staticmethod
     def _convertFromFirestore(val: Any) -> Any:
@@ -109,11 +137,13 @@ class DocumentConverter():
 
         val_converted = val
         if isinstance(val, DocumentReference):
-            val_converted = {'path': val.path}
+            val_converted = {"path": val.path}
         elif isinstance(val, GeoPoint):
-            val_converted = {'latitude': val.latitude, 'longitude': val.longitude}
+            val_converted = {"latitude": val.latitude, "longitude": val.longitude}
         elif isinstance(val, dict):
-            val_converted = {k: DocumentConverter._convertFromFirestore(v) for k,v in val.items()}
+            val_converted = {
+                k: DocumentConverter._convertFromFirestore(v) for k, v in val.items()
+            }
         elif isinstance(val, list):
             val_converted = [DocumentConverter._convertFromFirestore(v) for v in val]
 
@@ -130,15 +160,20 @@ class DocumentConverter():
         val_converted = val
         if isinstance(val, dict):
             l = len(val)
-            if (l == 1) and ('path' in val):
-              val_converted = DocumentReference(*val['path'].split('/'), client=client)
-            elif (l == 2) and ('latitude' in val) and ('longitude' in val):
-              val_converted = GeoPoint(val['latitude'], val['longitude'])
+            if (l == 1) and ("path" in val):
+                val_converted = DocumentReference(
+                    *val["path"].split("/"), client=client
+                )
+            elif (l == 2) and ("latitude" in val) and ("longitude" in val):
+                val_converted = GeoPoint(val["latitude"], val["longitude"])
             else:
-              val_converted = {k: DocumentConverter._convertFromLangChain(v, client) for k,v in val.items()}
+                val_converted = {
+                    k: DocumentConverter._convertFromLangChain(v, client)
+                    for k, v in val.items()
+                }
         elif isinstance(val, list):
-            val_converted = [DocumentConverter._convertFromLangChain(v, client) for v in val]
+            val_converted = [
+                DocumentConverter._convertFromLangChain(v, client) for v in val
+            ]
 
         return val_converted
-
-
