@@ -18,7 +18,6 @@ import time
 import unittest.mock as mock
 from langchain_core.documents import Document
 from langchain_google_firestore import FirestoreLoader, FirestoreSaver
-from google.cloud import firestore
 from google.cloud.firestore import CollectionGroup, FieldFilter
 
 
@@ -98,16 +97,7 @@ def test_firestore_write_with_reference() -> None:
 
 def test_firestore_write_doc_id_error() -> None:
     saver = FirestoreSaver()
-    loader = FirestoreLoader("WriteId")
-
     doc_to_insert = [Document(page_content="{'f1': 1, 'f2': 2}")]
-
-    expected_doc = [
-        Document(
-            page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "WriteId/doc"}},
-        )
-    ]
     doc_id = ["a/b", "c/d"]
 
     pytest.case.assertRaises(
