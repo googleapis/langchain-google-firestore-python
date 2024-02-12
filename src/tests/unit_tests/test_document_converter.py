@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import pytest
-
-from langchain_core.documents import Document
-from langchain_google_firestore.utility.document_converter import DocumentConverter
 from google.cloud import firestore
-from google.cloud.firestore import DocumentSnapshot, DocumentReference, GeoPoint
+from google.cloud.firestore import DocumentReference, DocumentSnapshot, GeoPoint
+from langchain_core.documents import Document
+
+from langchain_google_firestore.utility.document_converter import DocumentConverter
 
 
 @pytest.mark.parametrize(

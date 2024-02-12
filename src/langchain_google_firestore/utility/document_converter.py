@@ -15,12 +15,7 @@
 from __future__ import annotations
 
 import ast
-
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    List,
-)
+from typing import TYPE_CHECKING, Any, List
 
 from langchain_core.documents import Document
 
@@ -29,11 +24,10 @@ IMPORT_ERROR_MSG = (
 )
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentSnapshot, DocumentReference
+    from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
 
 
 class DocumentConverter:
-
     @staticmethod
     def convertFirestoreDocument(
         document: DocumentSnapshot,
@@ -129,8 +123,8 @@ class DocumentConverter:
     @staticmethod
     def _convertFromFirestore(val: Any) -> Any:
         try:
-            from google.cloud.firestore_v1.document import DocumentReference
             from google.cloud.firestore_v1._helpers import GeoPoint
+            from google.cloud.firestore_v1.document import DocumentReference
         except ImportError:
             raise ImportError(IMPORT_ERROR_MSG)
 
@@ -151,8 +145,8 @@ class DocumentConverter:
     @staticmethod
     def _convertFromLangChain(val: Any, client: Client) -> Any:
         try:
-            from google.cloud.firestore_v1.document import DocumentReference
             from google.cloud.firestore_v1._helpers import GeoPoint
+            from google.cloud.firestore_v1.document import DocumentReference
         except ImportError:
             raise ImportError(IMPORT_ERROR_MSG)
 

@@ -14,16 +14,11 @@
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterator,
-    List,
-    Optional,
-)
+from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 
-from langchain_core.documents import Document
 from langchain_community.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
+
 from .utility.document_converter import DocumentConverter
 
 DEFAULT_FIRESTORE_DATABASE = "(default)"
@@ -34,7 +29,7 @@ IMPORT_ERROR_MSG = (
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentReference, Query, CollectionGroup
+    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
 
 
 class FirestoreLoader(BaseLoader):
