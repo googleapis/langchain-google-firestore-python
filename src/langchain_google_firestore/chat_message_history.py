@@ -42,7 +42,10 @@ if TYPE_CHECKING:
 
 class FirestoreChatMessageHistory(BaseChatMessageHistory):
     def __init__(
-        self, session_id: str, collection: str = DEFAULT_COLLECTION, client: Optional[Client] = None
+        self,
+        session_id: str,
+        collection: str = DEFAULT_COLLECTION,
+        client: Optional[Client] = None,
     ) -> None:
         """Chat Message History for Google Cloud Firestore.
         Args:
