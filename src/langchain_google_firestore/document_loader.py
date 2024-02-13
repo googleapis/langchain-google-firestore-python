@@ -22,15 +22,20 @@ from typing import (
     Optional,
 )
 
+import itertools
+import more_itertools
+
 from langchain_core.documents import Document
 from langchain_community.document_loaders.base import BaseLoader
 from .utility.document_converter import DocumentConverter
+from google.cloud import firestore
+from google.cloud.firestore import DocumentReference
+from google.cloud.firestore_v1.services.firestore.transports.base import (
+    DEFAULT_CLIENT_INFO,
+)
 
 DEFAULT_FIRESTORE_DATABASE = "(default)"
-USER_AGENT = "LangChain"
-IMPORT_ERROR_MSG = (
-    "`firestore` package not found, please run `pip3 install google-cloud-firestore`"
-)
+USER_AGENT = "langchain-google-firestore-python"
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
@@ -57,20 +62,12 @@ class FirestoreLoader(BaseLoader):
                 By default it will write all fields that are not in `page_content` into `metadata`.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        try:
-            from google.cloud import firestore
-            from google.cloud.firestore_v1.services.firestore.transports.base import (
-                DEFAULT_CLIENT_INFO,
-            )
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
-        client_info = DEFAULT_CLIENT_INFO
-        client_info.user_agent = USER_AGENT
         if client:
             self.client = client
             self.client._user_agent = USER_AGENT
         else:
+            client_info = DEFAULT_CLIENT_INFO
+            client_info.user_agent = USER_AGENT
             self.client = firestore.Client(client_info=client_info)
         self.source = source
         self.page_content_fields = page_content_fields
@@ -82,11 +79,6 @@ class FirestoreLoader(BaseLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """A lazy loader for Documents."""
-        try:
-            from google.cloud.firestore_v1.document import DocumentReference
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
         if isinstance(self.source, DocumentReference):
             self.source._client._client_info.user_agent = USER_AGENT
             doc = self._load_document()
@@ -97,8 +89,7 @@ class FirestoreLoader(BaseLoader):
             query = self.client.collection(self.source)
         else:
             query = self.source
-
-        query._client._client_info.user_agent = USER_AGENT
+            query._client._client_info.user_agent = USER_AGENT
 
         for document_snapshot in query.stream():
             yield DocumentConverter.convertFirestoreDocument(
@@ -158,29 +149,17 @@ class FirestoreSaver:
          document_ids: List of document ids to be used. By default it will try to
           construct the document paths using the `reference` from the Document.
         """
-        try:
-            from google.cloud.firestore_v1.document import DocumentReference
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
         db_batch = self.client.batch()
 
         if document_ids and (len(document_ids) != len(documents)):
-            raise ValueError("Document ids and docs must have the same size")
+            raise ValueError(
+                "`documents` and `document_ids` parameters must be the same length"
+            )
 
-        if document_ids:
-            docs_list = tuple(zip(documents, document_ids))
-        else:
-            docs_list = documents
+        docs_list = itertools.zip_longest(documents, document_ids or [])
 
-        for batch in self._batched(docs_list, WRITE_BATCH_SIZE):
-            for elem in batch:
-                if document_ids:
-                    doc = elem[0]
-                    doc_id = elem[1]
-                else:
-                    doc = elem
-                    doc_id = None
+        for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
+            for doc, doc_id in batch:
                 document_dict = DocumentConverter.convertLangChainDocument(
                     doc, self.client
                 )
@@ -211,27 +190,20 @@ class FirestoreSaver:
             the `documents` argument will be ignored.
 
         """
-        try:
-            from google.cloud.firestore import DocumentReference
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
         db_batch = self.client.batch()
 
-        if document_ids:
-            iter_docs = self._batched(document_ids, WRITE_BATCH_SIZE)
-        else:
-            iter_docs = self._batched(documents, WRITE_BATCH_SIZE)
+        docs_list = itertools.zip_longest(documents, document_ids or [])
 
-        for batch in iter_docs:
-            for elem in batch:
-                if document_ids:
-                    document_path = elem
+        for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
+            for doc, doc_id in batch:
+                if doc_id:
+                    document_path = doc_id
                 else:
                     document_dict = DocumentConverter.convertLangChainDocument(
-                        elem, self.client
+                        doc, self.client
                     )
                     document_path = document_dict["path"]
+
                 if not document_path:
                     continue
                 doc_ref = DocumentReference(
@@ -239,7 +211,3 @@ class FirestoreSaver:
                 )
                 db_batch.delete(doc_ref)
             db_batch.commit()
-
-    def _batched(self, lst: List[Any], n: int) -> Iterator[Any]:
-        for i in range(0, len(lst), n):
-            yield lst[i : i + n]

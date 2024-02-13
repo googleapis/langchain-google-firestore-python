@@ -23,10 +23,7 @@ from typing import (
 )
 
 from langchain_core.documents import Document
-
-IMPORT_ERROR_MSG = (
-    "`firestore` package not found, please run `pip3 install google-cloud-firestore`"
-)
+from google.cloud.firestore import DocumentReference, GeoPoint
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, DocumentSnapshot, DocumentReference
@@ -43,14 +40,8 @@ class DocumentConverter:
         data_doc = document.to_dict()
         metadata = {"reference": {"path": document.reference.path}}
 
-        if page_content_fields:
-            set_page_fields = set(page_content_fields)
-        else:
-            set_page_fields = set()
-        if metadata_fields:
-            set_metadata_fields = set(metadata_fields)
-        else:
-            set_metadata_fields = set()
+        set_page_fields = set(page_content_fields or [])
+        set_metadata_fields = set(metadata_fields or [])
         shared_keys = set_metadata_fields & set_page_fields
 
         page_content = {}
@@ -128,12 +119,6 @@ class DocumentConverter:
 
     @staticmethod
     def _convertFromFirestore(val: Any) -> Any:
-        try:
-            from google.cloud.firestore_v1.document import DocumentReference
-            from google.cloud.firestore_v1._helpers import GeoPoint
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
         val_converted = val
         if isinstance(val, DocumentReference):
             val_converted = {"path": val.path}
@@ -150,16 +135,10 @@ class DocumentConverter:
 
     @staticmethod
     def _convertFromLangChain(val: Any, client: Client) -> Any:
-        try:
-            from google.cloud.firestore_v1.document import DocumentReference
-            from google.cloud.firestore_v1._helpers import GeoPoint
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
         val_converted = val
         if isinstance(val, dict):
             l = len(val)
-            if (l == 1) and ("path" in val):
+            if (l == 1) and ("path" in val) and isinstance(val["path"], str):
                 val_converted = DocumentReference(
                     *val["path"].split("/"), client=client
                 )
