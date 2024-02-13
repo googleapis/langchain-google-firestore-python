@@ -29,12 +29,14 @@ from langchain_core.messages import (
     BaseMessage,
     messages_from_dict,
 )
-
-USER_AGENT = "LangChain"
-DEFAULT_COLLECTION = "ChatHistory"
-IMPORT_ERROR_MSG = (
-    "`firestore` package not found, please run `pip3 install google-cloud-firestore`"
+from google.cloud import firestore
+from google.cloud.firestore_v1.services.firestore.transports.base import (
+    DEFAULT_CLIENT_INFO,
 )
+
+
+USER_AGENT = "langchain-google-firestore-python"
+DEFAULT_COLLECTION = "ChatHistory"
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, DocumentReference, Query, CollectionGroup
@@ -54,48 +56,45 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
             collection: The single `/`-delimited path to a Firestore collection.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        try:
-            from google.cloud import firestore
-            from google.cloud.firestore_v1.services.firestore.transports.base import (
-                DEFAULT_CLIENT_INFO,
-            )
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
-        client_info = DEFAULT_CLIENT_INFO
-        client_info.user_agent = USER_AGENT
         if client:
             self.client = client
             self.client._user_agent = USER_AGENT
         else:
+            client_info = DEFAULT_CLIENT_INFO
+            client_info.user_agent = USER_AGENT
             self.client = firestore.Client(client_info=client_info)
         self.session_id = session_id
         self.doc_ref = self.client.collection(collection).document(session_id)
         self.messages: List[BaseMessage] = []
-        self.load_messages()
+        self._load_messages()
 
-    def load_messages(self) -> None:
+    def _load_messages(self) -> None:
         doc = self.doc_ref.get()
         if doc.exists:
             encoded_messages = doc.to_dict()["messages"]
             if "messages" in encoded_messages:
-                self.messages = self._decode_messages(encoded_messages)
+                self.messages = MessageConverter.decode_messages(encoded_messages)
 
     def add_message(self, message: BaseMessage) -> None:
         self.messages.append(message)
-        self.upsert_messages()
+        self._upsert_messages()
 
-    def upsert_messages(self) -> None:
-        self.doc_ref.set({"messages": self._encode_messages(self.messages)})
+    def _upsert_messages(self) -> None:
+        self.doc_ref.set({"messages": MessageConverter.encode_messages(self.messages)})
 
     def clear(self) -> None:
         self.messages = []
         self.doc_ref.delete()
 
-    def _encode_messages(self, messages: List[BaseMessage]) -> List[str]:
+
+class MessageConverter:
+
+    @staticmethod
+    def encode_messages(messages: List[BaseMessage]) -> List[str]:
         return [str.encode(m.json()) for m in messages]
 
-    def _decode_messages(self, messages: List[str]) -> List[BaseMessage]:
+    @staticmethod
+    def decode_messages(messages: List[str]) -> List[BaseMessage]:
         dict_messages = [json.loads(m) for m in messages]
         return messages_from_dict(
             [{"type": m["type"], "data": m} for m in dict_messages]

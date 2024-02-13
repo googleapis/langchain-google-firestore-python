@@ -37,7 +37,7 @@ def test_firestore_history_workflow() -> None:
     pytest.case.assertCountEqual(expected_messages, chat_history.messages)
 
     chat_history.clear()
-    chat_history.load_messages()
+    chat_history._load_messages()
 
     assert len(chat_history.messages) == 0
 
@@ -64,7 +64,7 @@ def test_firestore_load_messages() -> None:
     pytest.case.assertCountEqual(expected_messages, chat_history.messages)
 
     chat_history.clear()
-    chat_history.load_messages()
+    chat_history._load_messages()
 
     assert len(chat_history.messages) == 0
 
