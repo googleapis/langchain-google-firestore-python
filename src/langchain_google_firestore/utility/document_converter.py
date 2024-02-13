@@ -15,22 +15,16 @@
 from __future__ import annotations
 
 import ast
-
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    List,
-)
+from typing import TYPE_CHECKING, Any, List
 
 from langchain_core.documents import Document
 from google.cloud.firestore import DocumentReference, GeoPoint
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentSnapshot, DocumentReference
+    from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
 
 
 class DocumentConverter:
-
     @staticmethod
     def convertFirestoreDocument(
         document: DocumentSnapshot,

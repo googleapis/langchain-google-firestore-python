@@ -14,19 +14,14 @@
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterator,
-    List,
-    Optional,
-)
+from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 
 import itertools
 import more_itertools
 
-from langchain_core.documents import Document
 from langchain_community.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
+
 from .utility.document_converter import DocumentConverter
 from google.cloud import firestore
 from google.cloud.firestore import DocumentReference
@@ -39,7 +34,7 @@ USER_AGENT = "langchain-google-firestore-python"
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentReference, Query, CollectionGroup
+    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
 
 
 class FirestoreLoader(BaseLoader):
@@ -96,7 +91,7 @@ class FirestoreLoader(BaseLoader):
                 document_snapshot, self.page_content_fields, self.metadata_fields
             )
 
-    def _load_document(self) -> Document:
+    def _load_document(self) -> Document | None:
         doc = self.source.get()
         if doc:
             return DocumentConverter.convertFirestoreDocument(doc)
@@ -118,21 +113,13 @@ class FirestoreSaver:
               value is present it will write documents with an auto generated id.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        try:
-            from google.cloud import firestore
-            from google.cloud.firestore_v1.services.firestore.transports.base import (
-                DEFAULT_CLIENT_INFO,
-            )
-        except ImportError:
-            raise ImportError(IMPORT_ERROR_MSG)
-
         self.collection = collection
-        client_info = DEFAULT_CLIENT_INFO
-        client_info.user_agent = USER_AGENT
         if client:
             self.client = client
             self.client._user_agent = USER_AGENT
         else:
+            client_info = DEFAULT_CLIENT_INFO
+            client_info.user_agent = USER_AGENT
             self.client = firestore.Client(client_info=client_info)
 
     def upsert_documents(

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import TestCase
+
 import pytest
 from google.cloud import firestore
-from unittest import TestCase
 
 
 def pytest_configure():
