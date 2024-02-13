@@ -14,20 +14,19 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 
-import itertools
 import more_itertools
-
-from langchain_community.document_loaders.base import BaseLoader
-from langchain_core.documents import Document
-
-from .utility.document_converter import DocumentConverter
 from google.cloud import firestore
 from google.cloud.firestore import DocumentReference
 from google.cloud.firestore_v1.services.firestore.transports.base import (
     DEFAULT_CLIENT_INFO,
 )
+from langchain_community.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
+
+from .utility.document_converter import DocumentConverter
 
 DEFAULT_FIRESTORE_DATABASE = "(default)"
 USER_AGENT = "langchain-google-firestore-python"
