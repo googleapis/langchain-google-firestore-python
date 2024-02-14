@@ -17,7 +17,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING, Any, List
 
-from google.cloud.firestore import DocumentReference, GeoPoint
+from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
 from langchain_core.documents import Document
 
 if TYPE_CHECKING:
@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 
 class DocumentConverter:
     @staticmethod
-    def convertFirestoreDocument(
+    def convert_firestore_document(
         document: DocumentSnapshot,
-        page_content_fields: List[str] = None,
-        metadata_fields: List[str] = None,
+        page_content_fields: List[str] = [],
+        metadata_fields: List[str] = [],
     ) -> Document:
         data_doc = document.to_dict()
         metadata = {"reference": {"path": document.reference.path}}
@@ -41,13 +41,13 @@ class DocumentConverter:
         page_content = {}
         for k in sorted(shared_keys):
             if k in data_doc:
-                val = DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                val = DocumentConverter._convert_from_firestore(data_doc.pop(k))
                 page_content[k] = val
                 metadata[k] = val
 
         metadata.update(
             {
-                k: DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                k: DocumentConverter._convert_from_firestore(data_doc.pop(k))
                 for k in sorted(set_metadata_fields - shared_keys)
                 if k in data_doc
             }
@@ -57,13 +57,13 @@ class DocumentConverter:
             # write all fields
             keys = sorted(data_doc.keys())
             page_content = {
-                k: DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                k: DocumentConverter._convert_from_firestore(data_doc.pop(k))
                 for k in keys
             }
         else:
             page_content.update(
                 {
-                    k: DocumentConverter._convertFromFirestore(data_doc.pop(k))
+                    k: DocumentConverter._convert_from_firestore(data_doc.pop(k))
                     for k in sorted(set_page_fields - shared_keys)
                     if k in data_doc
                 }
@@ -76,7 +76,7 @@ class DocumentConverter:
             # metadata fields not specified. Write remaining fields into metadata
             metadata.update(
                 {
-                    k: DocumentConverter._convertFromFirestore(v)
+                    k: DocumentConverter._convert_from_firestore(v)
                     for k, v in sorted(data_doc.items())
                 }
             )
@@ -84,13 +84,13 @@ class DocumentConverter:
         return Document(page_content=str(page_content), metadata=metadata)
 
     @staticmethod
-    def convertLangChainDocument(document: Document, client: Client) -> dict:
+    def convert_langchain_document(document: Document, client: Client) -> dict:
         metadata = document.metadata
         path = None
         data = {}
 
         if metadata:
-            data.update(DocumentConverter._convertFromLangChain(metadata, client))
+            data.update(DocumentConverter._convert_from_langchain(metadata, client))
         if (
             ("reference" in metadata)
             and ("path" in metadata["reference"])
@@ -104,7 +104,7 @@ class DocumentConverter:
                 content_dict = ast.literal_eval(document.page_content)
             except (ValueError, SyntaxError):
                 content_dict = {"page_content": document.page_content}
-            converted_page = DocumentConverter._convertFromLangChain(
+            converted_page = DocumentConverter._convert_from_langchain(
                 content_dict, client
             )
             data.update(converted_page)
@@ -112,7 +112,7 @@ class DocumentConverter:
         return {"path": path, "data": data}
 
     @staticmethod
-    def _convertFromFirestore(val: Any) -> Any:
+    def _convert_from_firestore(val: Any) -> Any:
         val_converted = val
         if isinstance(val, DocumentReference):
             val_converted = {"path": val.path}
@@ -120,15 +120,15 @@ class DocumentConverter:
             val_converted = {"latitude": val.latitude, "longitude": val.longitude}
         elif isinstance(val, dict):
             val_converted = {
-                k: DocumentConverter._convertFromFirestore(v) for k, v in val.items()
+                k: DocumentConverter._convert_from_firestore(v) for k, v in val.items()
             }
         elif isinstance(val, list):
-            val_converted = [DocumentConverter._convertFromFirestore(v) for v in val]
+            val_converted = [DocumentConverter._convert_from_firestore(v) for v in val]
 
         return val_converted
 
     @staticmethod
-    def _convertFromLangChain(val: Any, client: Client) -> Any:
+    def _convert_from_langchain(val: Any, client: Client) -> Any:
         val_converted = val
         if isinstance(val, dict):
             l = len(val)
@@ -140,12 +140,12 @@ class DocumentConverter:
                 val_converted = GeoPoint(val["latitude"], val["longitude"])
             else:
                 val_converted = {
-                    k: DocumentConverter._convertFromLangChain(v, client)
+                    k: DocumentConverter._convert_from_langchain(v, client)
                     for k, v in val.items()
                 }
         elif isinstance(val, list):
             val_converted = [
-                DocumentConverter._convertFromLangChain(v, client) for v in val
+                DocumentConverter._convert_from_langchain(v, client) for v in val
             ]
 
         return val_converted

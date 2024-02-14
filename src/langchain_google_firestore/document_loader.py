@@ -18,8 +18,8 @@ import itertools
 from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 
 import more_itertools
-from google.cloud import firestore
-from google.cloud.firestore import DocumentReference
+from google.cloud import firestore  # type: ignore
+from google.cloud.firestore import DocumentReference  # type: ignore
 from google.cloud.firestore_v1.services.firestore.transports.base import (
     DEFAULT_CLIENT_INFO,
 )
@@ -28,7 +28,6 @@ from langchain_core.documents import Document
 
 from .utility.document_converter import DocumentConverter
 
-DEFAULT_FIRESTORE_DATABASE = "(default)"
 USER_AGENT = "langchain-google-firestore-python"
 WRITE_BATCH_SIZE = 500
 
@@ -40,8 +39,8 @@ class FirestoreLoader(BaseLoader):
     def __init__(
         self,
         source: Query | CollectionGroup | DocumentReference | str,
-        page_content_fields: List[str] = None,
-        metadata_fields: Optional[List[str]] = None,
+        page_content_fields: List[str] = [],
+        metadata_fields: List[str] = [],
         client: Optional[Client] = None,
     ) -> None:
         """Document Loader for Google Cloud Firestore.
@@ -73,29 +72,20 @@ class FirestoreLoader(BaseLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """A lazy loader for Documents."""
+        query = None
         if isinstance(self.source, DocumentReference):
             self.source._client._client_info.user_agent = USER_AGENT
-            doc = self._load_document()
-            if doc:
-                yield self._load_document()
-            return
+            yield DocumentConverter.convert_firestore_document(self.source.get())
         elif isinstance(self.source, str):
             query = self.client.collection(self.source)
         else:
             query = self.source
             query._client._client_info.user_agent = USER_AGENT
-
-        for document_snapshot in query.stream():
-            yield DocumentConverter.convertFirestoreDocument(
-                document_snapshot, self.page_content_fields, self.metadata_fields
-            )
-
-    def _load_document(self) -> Document | None:
-        doc = self.source.get()
-        if doc:
-            return DocumentConverter.convertFirestoreDocument(doc)
-        else:
-            return None
+        if query:
+            for document_snapshot in query.stream():
+                yield DocumentConverter.convert_firestore_document(
+                    document_snapshot, self.page_content_fields, self.metadata_fields
+                )
 
 
 class FirestoreSaver:
@@ -130,7 +120,7 @@ class FirestoreSaver:
         """Create / merge documents into the Firestore database.
         Args:
          documents: List of documents to be written into Firestore.
-         merge: To merge data iwth an existing document (creating if the document does
+         merge: To merge data with an existing document (creating if the document does
           not exist).
          document_ids: List of document ids to be used. By default it will try to
           construct the document paths using the `reference` from the Document.
@@ -146,7 +136,7 @@ class FirestoreSaver:
 
         for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
-                document_dict = DocumentConverter.convertLangChainDocument(
+                document_dict = DocumentConverter.convert_langchain_document(
                     doc, self.client
                 )
                 if self.collection:
@@ -185,7 +175,7 @@ class FirestoreSaver:
                 if doc_id:
                     document_path = doc_id
                 elif doc:
-                    document_dict = DocumentConverter.convertLangChainDocument(
+                    document_dict = DocumentConverter.convert_langchain_document(
                         doc, self.client
                     )
                     document_path = document_dict["path"]

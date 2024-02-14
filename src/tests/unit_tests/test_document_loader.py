@@ -16,10 +16,20 @@ import time
 import unittest.mock as mock
 
 import pytest
-from google.cloud.firestore import CollectionGroup, FieldFilter
+from google.cloud.firestore import Client, CollectionGroup, FieldFilter  # type: ignore
 from langchain_core.documents import Document
-
 from langchain_google_firestore import FirestoreLoader, FirestoreSaver
+from unittest import TestCase
+
+
+@pytest.fixture
+def test_case() -> TestCase:
+    return TestCase()
+
+
+@pytest.fixture
+def client() -> Client:
+    return Client()
 
 
 def test_firestore_write_roundtrip_and_load() -> None:
@@ -45,7 +55,7 @@ def test_firestore_write_roundtrip_and_load() -> None:
     assert len(deleted_docs) == 0
 
 
-def test_firestore_write_load_batch() -> None:
+def test_firestore_write_load_batch(test_case: TestCase) -> None:
     saver = FirestoreSaver("WriteBatch")
     loader = FirestoreLoader("WriteBatch")
     NUM_DOCS = 1000
@@ -69,11 +79,11 @@ def test_firestore_write_load_batch() -> None:
     time.sleep(5)
     docs_after_delete = loader.load()
 
-    pytest.case.assertCountEqual(expected_docs, docs_after_write)
+    test_case.assertCountEqual(expected_docs, docs_after_write)
     assert len(docs_after_delete) == 0
 
 
-def test_firestore_write_with_reference() -> None:
+def test_firestore_write_with_reference(test_case: TestCase) -> None:
     saver = FirestoreSaver()
     loader = FirestoreLoader("WriteRef")
 
@@ -92,21 +102,21 @@ def test_firestore_write_with_reference() -> None:
     time.sleep(1)
     deleted_doc = loader.load()
 
-    pytest.case.assertCountEqual(expected_doc, written_doc)
+    test_case.assertCountEqual(expected_doc, written_doc)
     assert len(deleted_doc) == 0
 
 
-def test_firestore_write_doc_id_error() -> None:
+def test_firestore_write_doc_id_error(test_case: TestCase) -> None:
     saver = FirestoreSaver()
     doc_to_insert = [Document(page_content="{'f1': 1, 'f2': 2}")]
     doc_id = ["a/b", "c/d"]
 
-    pytest.case.assertRaises(
+    test_case.assertRaises(
         ValueError, saver.upsert_documents, documents=doc_to_insert, document_ids=doc_id
     )
 
 
-def test_firestore_write_with_doc_id() -> None:
+def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
     saver = FirestoreSaver()
     loader = FirestoreLoader("WriteId")
 
@@ -133,7 +143,7 @@ def test_firestore_write_with_doc_id() -> None:
     time.sleep(1)
     deleted_doc = loader.load()
 
-    pytest.case.assertCountEqual(expected_doc, written_doc)
+    test_case.assertCountEqual(expected_doc, written_doc)
     assert len(deleted_doc) == 0
 
 
@@ -148,7 +158,11 @@ def test_firestore_write_with_doc_id() -> None:
     ],
 )
 def test_firestore_load_with_fields(
-    page_fields, metadata_fields, expected_page_content, expected_metadata
+    page_fields,
+    metadata_fields,
+    expected_page_content,
+    expected_metadata,
+    test_case: TestCase,
 ):
     saver = FirestoreSaver("WritePageFields")
     loader = FirestoreLoader(
@@ -173,11 +187,11 @@ def test_firestore_load_with_fields(
     time.sleep(1)
     deleted_docs = loader.load()
 
-    pytest.case.assertCountEqual(expected_doc, loaded_doc)
+    test_case.assertCountEqual(expected_doc, loaded_doc)
     assert len(deleted_docs) == 0
 
 
-def test_firestore_load_from_subcollection():
+def test_firestore_load_from_subcollection(test_case: TestCase):
     saver = FirestoreSaver()
     loader = FirestoreLoader("collection/doc/subcol")
 
@@ -197,11 +211,11 @@ def test_firestore_load_from_subcollection():
     time.sleep(1)
     deleted_docs = loader.load()
 
-    pytest.case.assertCountEqual(doc_to_insert, loaded_doc)
+    test_case.assertCountEqual(doc_to_insert, loaded_doc)
     assert len(deleted_docs) == 0
 
 
-def test_firestore_load_from_query():
+def test_firestore_load_from_query(test_case: TestCase, client: Client):
     saver = FirestoreSaver("WriteQuery")
     loader_cleanup = FirestoreLoader("WriteQuery")
 
@@ -222,7 +236,7 @@ def test_firestore_load_from_query():
         ),
     ]
 
-    col_ref = pytest.client.collection("WriteQuery")
+    col_ref = client.collection("WriteQuery")
     query = col_ref.where(filter=FieldFilter("region", "==", "west_coast"))
     loader = FirestoreLoader(query)
 
@@ -235,11 +249,11 @@ def test_firestore_load_from_query():
     time.sleep(1)
     deleted_docs = loader.load()
 
-    pytest.case.assertCountEqual(expected_docs, loaded_docs)
+    test_case.assertCountEqual(expected_docs, loaded_docs)
     assert len(deleted_docs) == 0
 
 
-def test_firestore_load_from_col_group():
+def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
 
     docs_to_insert = [
@@ -268,23 +282,23 @@ def test_firestore_load_from_col_group():
     # wait 1s for consistency
     time.sleep(1)
 
-    col_ref = pytest.client.collection("ColGroup")
+    col_ref = client.collection("ColGroup")
     collection_group = CollectionGroup(col_ref)
     loader = FirestoreLoader(collection_group)
     loaded_docs = loader.load()
     saver.delete_documents(docs_to_insert)
 
-    pytest.case.assertCountEqual(expected_docs, loaded_docs)
+    test_case.assertCountEqual(expected_docs, loaded_docs)
 
 
-def test_firestore_load_from_doc_ref():
+def test_firestore_load_from_doc_ref(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
 
     doc_to_insert = [
         Document(page_content="data", metadata={"reference": {"path": "foo/bar"}})
     ]
 
-    doc_ref = pytest.client.collection("foo").document("bar")
+    doc_ref = client.collection("foo").document("bar")
 
     saver.upsert_documents(doc_to_insert)
     # wait 1s for consistency
@@ -293,7 +307,7 @@ def test_firestore_load_from_doc_ref():
     loaded_doc = loader.load()
     saver.delete_documents(doc_to_insert)
 
-    pytest.case.assertCountEqual(doc_to_insert, loaded_doc)
+    test_case.assertCountEqual(doc_to_insert, loaded_doc)
 
 
 def test_firestore_empty_load():

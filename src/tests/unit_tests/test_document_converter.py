@@ -14,7 +14,7 @@
 
 import pytest
 from google.cloud import firestore
-from google.cloud.firestore import DocumentReference, DocumentSnapshot, GeoPoint
+from google.cloud.firestore import DocumentReference, DocumentSnapshot, GeoPoint  # type: ignore
 from langchain_core.documents import Document
 
 from langchain_google_firestore.utility.document_converter import DocumentConverter
@@ -60,7 +60,7 @@ from langchain_google_firestore.utility.document_converter import DocumentConver
 def test_convert_firestore_document_default_fields(
     document_snapshot, langchain_doc
 ) -> None:
-    return_doc = DocumentConverter.convertFirestoreDocument(document_snapshot)
+    return_doc = DocumentConverter.convert_firestore_document(document_snapshot)
 
     assert return_doc == langchain_doc
 
@@ -176,7 +176,7 @@ def test_convert_firestore_document_default_fields(
 def test_convert_firestore_document_with_filters(
     document_snapshot, langchain_doc, page_content_fields, metadata_fields
 ) -> None:
-    return_doc = DocumentConverter.convertFirestoreDocument(
+    return_doc = DocumentConverter.convert_firestore_document(
         document_snapshot, page_content_fields, metadata_fields
     )
 
@@ -267,7 +267,7 @@ def test_convert_firestore_document_with_filters(
     ],
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
-    return_doc = DocumentConverter.convertLangChainDocument(
+    return_doc = DocumentConverter.convert_langchain_document(
         langchain_doc, pytest.client
     )
 
@@ -301,8 +301,8 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
     ],
 )
 def test_roundtrip_firestore(firestore_doc):
-    langchain_doc = DocumentConverter.convertFirestoreDocument(firestore_doc)
-    roundtrip_doc = DocumentConverter.convertLangChainDocument(
+    langchain_doc = DocumentConverter.convert_firestore_document(firestore_doc)
+    roundtrip_doc = DocumentConverter.convert_langchain_document(
         langchain_doc, pytest.client
     )
 
