@@ -57,7 +57,7 @@ class FirestoreLoader(BaseLoader):
         """
         if client:
             self.client = client
-            self.client._user_agent = USER_AGENT
+            self.client._client_info.user_agent = USER_AGENT
         else:
             client_info = DEFAULT_CLIENT_INFO
             client_info.user_agent = USER_AGENT
@@ -105,7 +105,7 @@ class FirestoreSaver:
         self.collection = collection
         if client:
             self.client = client
-            self.client._user_agent = USER_AGENT
+            self.client._client_info.user_agent = USER_AGENT
         else:
             client_info = DEFAULT_CLIENT_INFO
             client_info.user_agent = USER_AGENT
