@@ -47,7 +47,7 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         """
         if client:
             self.client = client
-            self.client._client_info._user_agent = USER_AGENT
+            self.client._client_info.user_agent = USER_AGENT
         else:
             client_info = DEFAULT_CLIENT_INFO
             client_info.user_agent = USER_AGENT
