@@ -14,7 +14,12 @@
 
 import pytest
 from google.cloud import firestore
-from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot, GeoPoint  # type: ignore
+from google.cloud.firestore import (  # type: ignore
+    Client,
+    DocumentReference,
+    DocumentSnapshot,
+    GeoPoint,
+)
 from langchain_core.documents import Document
 
 from langchain_google_firestore.utility.document_converter import DocumentConverter
