@@ -15,7 +15,6 @@
 import pytest
 from google.cloud import firestore
 from google.cloud.firestore import (  # type: ignore
-    Client,
     DocumentReference,
     DocumentSnapshot,
     GeoPoint,
@@ -225,7 +224,7 @@ def test_convert_firestore_document_with_filters(
                 "data": {
                     "page_content": "value",
                     "metadata_field": DocumentReference(
-                        *["abc", "xyz"], client=Client()
+                        *["abc", "xyz"], client=pytest.client
                     ),
                 },
             },
@@ -272,7 +271,9 @@ def test_convert_firestore_document_with_filters(
     ],
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
-    return_doc = DocumentConverter.convert_langchain_document(langchain_doc, Client())
+    return_doc = DocumentConverter.convert_langchain_document(
+        langchain_doc, pytest.client
+    )
 
     assert return_doc == firestore_doc
 
@@ -282,13 +283,17 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
     [
         (
             DocumentSnapshot(
-                reference=DocumentReference(*["foo", "bar"], client=Client()),
+                reference=DocumentReference(*["foo", "bar"], client=pytest.client),
                 data={
                     "field_1": GeoPoint(1, 2),
                     "field_2": [
                         "data",
                         2,
-                        {"nested": DocumentReference(*["abc", "xyz"], client=Client())},
+                        {
+                            "nested": DocumentReference(
+                                *["abc", "xyz"], client=pytest.client
+                            )
+                        },
                     ],
                 },
                 exists=True,
@@ -302,7 +307,7 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
 def test_roundtrip_firestore(firestore_doc):
     langchain_doc = DocumentConverter.convert_firestore_document(firestore_doc)
     roundtrip_doc = DocumentConverter.convert_langchain_document(
-        langchain_doc, Client()
+        langchain_doc, pytest.client
     )
 
     assert roundtrip_doc["data"] == firestore_doc.to_dict()
