@@ -19,4 +19,3 @@ from unittest import TestCase
 
 def pytest_configure():
     pytest.client = firestore.Client()
-    pytest.case = TestCase()

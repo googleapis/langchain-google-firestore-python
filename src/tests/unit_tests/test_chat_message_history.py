@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import uuid
-
-from langchain_google_firestore import FirestoreChatMessageHistory
-from langchain_core.messages import AIMessage, HumanMessage
 from multiprocessing import Pool
 
+import pytest
+from typing import List
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_google_firestore import FirestoreChatMessageHistory
+from unittest import TestCase
 
-def test_firestore_history_workflow() -> None:
+
+@pytest.fixture
+def test_case() -> TestCase:
+    return TestCase()
+
+
+def test_firestore_history_workflow(test_case: TestCase) -> None:
     session_id = uuid.uuid4().hex
     chat_history = FirestoreChatMessageHistory(
         session_id=session_id, collection="HistoryWorkflow"
@@ -34,7 +41,7 @@ def test_firestore_history_workflow() -> None:
         HumanMessage(content="User message"),
     ]
 
-    pytest.case.assertCountEqual(expected_messages, chat_history.messages)
+    test_case.assertCountEqual(expected_messages, chat_history.messages)
 
     chat_history.clear()
     chat_history._load_messages()
@@ -42,14 +49,14 @@ def test_firestore_history_workflow() -> None:
     assert len(chat_history.messages) == 0
 
 
-def test_firestore_load_messages() -> None:
+def test_firestore_load_messages(test_case: TestCase) -> None:
     NUM_MESSAGES = 25
     session_id = uuid.uuid4().hex
     chat_history = FirestoreChatMessageHistory(
         session_id=session_id, collection="HistoryLoad"
     )
 
-    expected_messages = []
+    expected_messages: List[AIMessage | HumanMessage] = []
 
     for i in range(NUM_MESSAGES):
         ai_m = AIMessage(content=f"AI message: {i}")
@@ -61,7 +68,7 @@ def test_firestore_load_messages() -> None:
         chat_history.add_ai_message(ai_m)
         chat_history.add_user_message(human_m)
 
-    pytest.case.assertCountEqual(expected_messages, chat_history.messages)
+    test_case.assertCountEqual(expected_messages, chat_history.messages)
 
     chat_history.clear()
     chat_history._load_messages()
@@ -69,7 +76,7 @@ def test_firestore_load_messages() -> None:
     assert len(chat_history.messages) == 0
 
 
-def test_firestore_multiple_sessions() -> None:
+def test_firestore_multiple_sessions(test_case: TestCase) -> None:
     collection = "MultipleSession"
     session_1 = uuid.uuid4().hex
     chat_history_1 = FirestoreChatMessageHistory(
@@ -94,8 +101,8 @@ def test_firestore_multiple_sessions() -> None:
         HumanMessage(content="Human message session 2"),
     ]
 
-    pytest.case.assertCountEqual(expected_message_session_1, chat_history_1.messages)
-    pytest.case.assertCountEqual(expected_message_session_2, chat_history_2.messages)
+    test_case.assertCountEqual(expected_message_session_1, chat_history_1.messages)
+    test_case.assertCountEqual(expected_message_session_2, chat_history_2.messages)
 
     chat_history_1.clear()
     chat_history_2.clear()

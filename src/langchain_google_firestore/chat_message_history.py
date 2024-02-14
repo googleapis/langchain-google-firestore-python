@@ -14,32 +14,21 @@
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterator,
-    List,
-    Optional,
-)
-
 import json
+from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import (
-    BaseMessage,
-    messages_from_dict,
-)
 from google.cloud import firestore
 from google.cloud.firestore_v1.services.firestore.transports.base import (
     DEFAULT_CLIENT_INFO,
 )
-
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import BaseMessage, messages_from_dict
 
 USER_AGENT = "langchain-google-firestore-python"
 DEFAULT_COLLECTION = "ChatHistory"
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentReference, Query, CollectionGroup
+    from google.cloud.firestore import Client  # type: ignore
 
 
 class FirestoreChatMessageHistory(BaseChatMessageHistory):
@@ -90,11 +79,11 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
 class MessageConverter:
 
     @staticmethod
-    def encode_messages(messages: List[BaseMessage]) -> List[str]:
+    def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
         return [str.encode(m.json()) for m in messages]
 
     @staticmethod
-    def decode_messages(messages: List[str]) -> List[BaseMessage]:
+    def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
         dict_messages = [json.loads(m) for m in messages]
         return messages_from_dict(
             [{"type": m["type"], "data": m} for m in dict_messages]
