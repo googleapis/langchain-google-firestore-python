@@ -184,7 +184,7 @@ class FirestoreSaver:
             for doc, doc_id in batch:
                 if doc_id:
                     document_path = doc_id
-                else:
+                elif doc:
                     document_dict = DocumentConverter.convertLangChainDocument(
                         doc, self.client
                     )
