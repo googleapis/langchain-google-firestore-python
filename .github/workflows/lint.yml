@@ -47,6 +47,7 @@ jobs:
 
       - name: Run linters
         run: |
+          black --version
           black --check --diff .
           isort --check --diff .
 
