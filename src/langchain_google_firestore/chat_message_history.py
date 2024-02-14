@@ -77,7 +77,6 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
 
 
 class MessageConverter:
-
     @staticmethod
     def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
         return [str.encode(m.json()) for m in messages]
