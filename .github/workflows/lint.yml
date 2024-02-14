@@ -47,8 +47,9 @@ jobs:
 
       - name: Run linters
         run: |
-          black --check .
-          isort --check .
+          black --version
+          black --check --diff .
+          isort --check --diff .
 
       - name: Run type-check
         run: mypy .
