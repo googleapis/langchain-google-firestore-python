@@ -317,3 +317,27 @@ def test_firestore_empty_load():
     loaded_docs = loader.load()
 
     assert len(loaded_docs) == 0
+
+
+def test_firestore_custom_client() -> None:
+    client = Client(database="(default)")
+    saver = FirestoreSaver("Custom", client=client)
+    loader = FirestoreLoader("Custom", client=client)
+
+    docs = [Document(page_content="data", metadata={})]
+
+    saver.upsert_documents(docs)
+    # wait 1s for consistency
+    time.sleep(1)
+    written_docs = loader.load()
+    saver.delete_documents(written_docs)
+    # wait 1s for consistency
+    time.sleep(1)
+
+    deleted_docs = loader.load()
+
+    assert len(written_docs) == 1
+    assert written_docs[0].page_content == "data"
+    assert written_docs[0].metadata != {}
+    assert "reference" in written_docs[0].metadata
+    assert len(deleted_docs) == 0
