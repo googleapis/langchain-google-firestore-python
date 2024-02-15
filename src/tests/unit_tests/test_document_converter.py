@@ -38,7 +38,7 @@ from langchain_google_firestore.utility.document_converter import DocumentConver
             ),
             Document(
                 page_content="{'field_1': 'data_1', 'field_2': 2}",
-                metadata={"reference": {"path": "foo/bar"}},
+                metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
             ),
         ),
         (
@@ -54,9 +54,9 @@ from langchain_google_firestore.utility.document_converter import DocumentConver
                 update_time=None,
             ),
             Document(
-                page_content="{'field_1': {'latitude': 1, 'longitude': 2}, "
-                + "'field_2': ['data', 2, {'nested': {'path': 'abc/xyz'}}]}",
-                metadata={"reference": {"path": "foo/bar"}},
+                page_content="{'field_1': {'latitude': 1, 'longitude': 2, 'type': 'firestore_type'}, "
+                + "'field_2': ['data', 2, {'nested': {'path': 'abc/xyz', 'type': 'firestore_type'}}]}",
+                metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
             ),
         ),
     ],
@@ -83,7 +83,7 @@ def test_convert_firestore_document_default_fields(
             ),
             Document(
                 page_content="data",
-                metadata={"reference": {"path": "abc/xyz"}, "data_field": "data"},
+                metadata={"reference": {"path": "abc/xyz", "type": "firestore_type"}, "data_field": "data"},
             ),
             ["data_field"],
             ["data_field"],
@@ -99,7 +99,7 @@ def test_convert_firestore_document_default_fields(
             ),
             Document(
                 page_content="val",
-                metadata={"reference": {"path": "abc/xyz"}, "field_1": 1},
+                metadata={"reference": {"path": "abc/xyz", "type": "firestore_type"}, "field_1": 1},
             ),
             ["field_2"],
             ["field_1"],
@@ -120,7 +120,7 @@ def test_convert_firestore_document_default_fields(
             ),
             Document(
                 page_content="{'field_2': 'val_2', 'field_3': 'val_3'}",
-                metadata={"reference": {"path": "abc/xyz"}, "field_1": "val_1"},
+                metadata={"reference": {"path": "abc/xyz", "type": "firestore_type"}, "field_1": "val_1"},
             ),
             ["field_2", "field_3"],
             ["field_1"],
@@ -142,7 +142,7 @@ def test_convert_firestore_document_default_fields(
             Document(
                 page_content="{'field_2': 'val_2', 'field_3': 'val_3'}",
                 metadata={
-                    "reference": {"path": "abc/xyz"},
+                    "reference": {"path": "abc/xyz", "type": "firestore_type"},
                     "field_1": "val_1",
                     "field_4": "val_4",
                 },
@@ -167,7 +167,7 @@ def test_convert_firestore_document_default_fields(
             Document(
                 page_content="{'field_2': 'val_2', 'field_4': 'val_4'}",
                 metadata={
-                    "reference": {"path": "abc/xyz"},
+                    "reference": {"path": "abc/xyz", "type": "firestore_type"},
                     "field_1": "val_1",
                     "field_3": "val_3",
                 },
@@ -191,12 +191,12 @@ def test_convert_firestore_document_with_filters(
     "langchain_doc,firestore_doc",
     [
         (
-            Document(page_content="value", metadata={"reference": {"path": "foo/bar"}}),
-            {"path": "foo/bar", "data": {"page_content": "value"}},
+            Document(page_content="value", metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}}),
+            {"reference": {"path": "foo/bar", "type": "firestore_type"}, "data": {"page_content": "value"}},
         ),
         (
             Document(page_content="value", metadata={"reference": {}}),
-            {"path": None, "data": {"page_content": "value", "reference": {}}},
+            {"reference": None, "data": {"page_content": "value", "reference": {}}},
         ),
         (
             Document(
@@ -204,7 +204,7 @@ def test_convert_firestore_document_with_filters(
                 metadata={"reference": {"path": "foo/bar", "unexpected_field": "data"}},
             ),
             {
-                "path": None,
+                "reference": None,
                 "data": {
                     "page_content": "value",
                     "reference": {"path": "foo/bar", "unexpected_field": "data"},
@@ -215,12 +215,12 @@ def test_convert_firestore_document_with_filters(
             Document(
                 page_content="value",
                 metadata={
-                    "reference": {"path": "foo/bar"},
-                    "metadata_field": {"path": "abc/xyz"},
+                    "reference": {"path": "foo/bar", "type": "firestore_type"},
+                    "metadata_field": {"path": "abc/xyz", "type": "firestore_type"},
                 },
             ),
             {
-                "path": "foo/bar",
+                "reference": {"path": "foo/bar", "type": "firestore_type"},
                 "data": {
                     "page_content": "value",
                     "metadata_field": DocumentReference(
@@ -232,36 +232,36 @@ def test_convert_firestore_document_with_filters(
         (
             Document(
                 page_content='{"field_1": "val_1", "field_2": "val_2"}',
-                metadata={"reference": {"path": "foo/bar"}, "field_3": "val_3"},
+                metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}, "field_3": "val_3"},
             ),
             {
-                "path": "foo/bar",
+                "reference": {"path": "foo/bar", "type": "firestore_type"},
                 "data": {"field_1": "val_1", "field_2": "val_2", "field_3": "val_3"},
             },
         ),
         (
-            Document(page_content="", metadata={"reference": {"path": "foo/bar"}}),
-            {"path": "foo/bar", "data": {}},
+            Document(page_content="", metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}}),
+            {"reference": {"path": "foo/bar", "type": "firestore_type"}, "data": {}},
         ),
         (
             Document(
                 page_content="",
                 metadata={
-                    "reference": {"path": "foo/bar"},
-                    "point": {"latitude": 1, "longitude": 2},
+                    "reference": {"path": "foo/bar", "type": "firestore_type"},
+                    "point": {"latitude": 1, "longitude": 2, "type": "firestore_type"},
                     "field_2": "val_2",
                 },
             ),
-            {"path": "foo/bar", "data": {"point": GeoPoint(1, 2), "field_2": "val_2"}},
+            {"reference": {"path": "foo/bar", "type": "firestore_type"}, "data": {"point": GeoPoint(1, 2), "field_2": "val_2"}},
         ),
-        (Document(page_content="", metadata={}), {"path": None, "data": {}}),
+        (Document(page_content="", metadata={}), {"reference": None, "data": {}}),
         (
             Document(
-                page_content='{"array":[1, "data", {"k_1":"v_1", "k_point": {"latitude":1, "longitude":0}}], "f_2":2}',
+                page_content='{"array":[1, "data", {"k_1":"v_1", "k_point": {"latitude":1, "longitude":0, "type": "firestore_type"}}], "f_2":2}',
                 metadata={},
             ),
             {
-                "path": None,
+                "reference": None,
                 "data": {
                     "array": [1, "data", {"k_1": "v_1", "k_point": GeoPoint(1, 0)}],
                     "f_2": 2,
@@ -311,4 +311,4 @@ def test_roundtrip_firestore(firestore_doc):
     )
 
     assert roundtrip_doc["data"] == firestore_doc.to_dict()
-    assert roundtrip_doc["path"] == firestore_doc.reference.path
+    assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path

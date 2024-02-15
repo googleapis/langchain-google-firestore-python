@@ -30,6 +30,7 @@ from .utility.document_converter import DocumentConverter
 
 USER_AGENT = "langchain-google-firestore-python"
 WRITE_BATCH_SIZE = 500
+TYPE = "firestore_type"
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
@@ -143,9 +144,11 @@ class FirestoreSaver:
                     doc_ref = self.client.collection(self.collection).document()
                 elif doc_id:
                     doc_ref = DocumentReference(*doc_id.split("/"), client=self.client)
-                elif document_dict["path"]:
+                elif ("reference" in document_dict) and ("type" in document_dict["reference"]) and (document_dict["reference"]["type"] == TYPE) and isinstance(document_dict["reference"]["path"],str):
+                    print("debug")
+                    print(document_dict)
                     doc_ref = DocumentReference(
-                        *document_dict["path"].split("/"), client=self.client
+                        *document_dict["reference"]["path"].split("/"), client=self.client
                     )
                 else:
                     continue
@@ -172,13 +175,15 @@ class FirestoreSaver:
 
         for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
+                document_path = None
                 if doc_id:
                     document_path = doc_id
                 elif doc:
                     document_dict = DocumentConverter.convert_langchain_document(
                         doc, self.client
                     )
-                    document_path = document_dict["path"]
+                    if ("reference" in document_dict) and ("type" in document_dict["reference"]) and (document_dict["reference"]["type"] == TYPE):
+                      document_path = document_dict["reference"]["path"]
 
                 if not document_path:
                     continue

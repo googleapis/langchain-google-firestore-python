@@ -23,6 +23,7 @@ from langchain_core.documents import Document
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
 
+TYPE = "firestore_type"
 
 class DocumentConverter:
     @staticmethod
@@ -32,7 +33,7 @@ class DocumentConverter:
         metadata_fields: List[str] = [],
     ) -> Document:
         data_doc = document.to_dict()
-        metadata = {"reference": {"path": document.reference.path}}
+        metadata = {"reference": {"path": document.reference.path, "type": TYPE}}
 
         set_page_fields = set(page_content_fields or [])
         set_metadata_fields = set(metadata_fields or [])
@@ -91,12 +92,14 @@ class DocumentConverter:
 
         if metadata:
             data.update(DocumentConverter._convert_from_langchain(metadata, client))
+
         if (
             ("reference" in metadata)
             and ("path" in metadata["reference"])
-            and (len(metadata["reference"]) == 1)
+            and ("type" in metadata["reference"])
+            and (metadata["reference"]["type"] == TYPE)
         ):
-            path = metadata["reference"]["path"]
+            path = metadata["reference"]
             data.pop("reference")
 
         if document.page_content:
@@ -109,15 +112,15 @@ class DocumentConverter:
             )
             data.update(converted_page)
 
-        return {"path": path, "data": data}
+        return {"reference": path, "data": data}
 
     @staticmethod
     def _convert_from_firestore(val: Any) -> Any:
         val_converted = val
         if isinstance(val, DocumentReference):
-            val_converted = {"path": val.path}
+            val_converted = {"path": val.path, "type": TYPE}
         elif isinstance(val, GeoPoint):
-            val_converted = {"latitude": val.latitude, "longitude": val.longitude}
+          val_converted = {"latitude": val.latitude, "longitude": val.longitude, "type": TYPE}
         elif isinstance(val, dict):
             val_converted = {
                 k: DocumentConverter._convert_from_firestore(v) for k, v in val.items()
@@ -132,11 +135,11 @@ class DocumentConverter:
         val_converted = val
         if isinstance(val, dict):
             l = len(val)
-            if (l == 1) and ("path" in val) and isinstance(val["path"], str):
+            if ("path" in val) and isinstance(val["path"], str) and ("type" in val) and (val["type"]==TYPE):
                 val_converted = DocumentReference(
                     *val["path"].split("/"), client=client
                 )
-            elif (l == 2) and ("latitude" in val) and ("longitude" in val):
+            elif ("latitude" in val) and ("longitude" in val) and ("type" in val) and (val["type"]==TYPE):
                 val_converted = GeoPoint(val["latitude"], val["longitude"])
             else:
                 val_converted = {

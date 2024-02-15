@@ -67,7 +67,7 @@ def test_firestore_write_load_batch(test_case: TestCase) -> None:
         docs.append(Document(page_content=f"content {i}"))
         expected_docs.append(
             Document(
-                page_content=f"content {i}", metadata={"reference": {"path": mock.ANY}}
+                page_content=f"content {i}", metadata={"reference": {"path": mock.ANY, "type": "firestore_type"}}
             )
         )
 
@@ -91,7 +91,7 @@ def test_firestore_write_with_reference(test_case: TestCase) -> None:
     expected_doc = [
         Document(
             page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "WriteRef/doc"}},
+            metadata={"reference": {"path": "WriteRef/doc", "type": "firestore_type"}},
         )
     ]
     saver.upsert_documents(expected_doc)
@@ -124,14 +124,14 @@ def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
     doc_to_insert = [
         Document(
             page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "foo/bar"}},
+            metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
         )
     ]
 
     expected_doc = [
         Document(
             page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "WriteId/doc"}},
+            metadata={"reference": {"path": "WriteId/doc", "type": "firestore_type"}},
         )
     ]
     doc_id = ["WriteId/doc"]
@@ -199,7 +199,7 @@ def test_firestore_load_from_subcollection(test_case: TestCase):
     doc_to_insert = [
         Document(
             page_content="data",
-            metadata={"reference": {"path": "collection/doc/subcol/sdoc"}},
+            metadata={"reference": {"path": "collection/doc/subcol/sdoc", "type": "firestore_type"}},
         )
     ]
 
@@ -260,22 +260,22 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     docs_to_insert = [
         Document(
             page_content="data_A",
-            metadata={"reference": {"path": "ColA/doc/ColGroup/doc1"}},
+            metadata={"reference": {"path": "ColA/doc/ColGroup/doc1", "type": "firestore_type"}},
         ),
         Document(
             page_content="data_B",
-            metadata={"reference": {"path": "ColB/doc/ColGroup/doc2"}},
+            metadata={"reference": {"path": "ColB/doc/ColGroup/doc2", "type": "firestore_type"}},
         ),
-        Document(page_content="data_C", metadata={"reference": {"path": "foo/bar"}}),
+        Document(page_content="data_C", metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}}),
     ]
     expected_docs = [
         Document(
             page_content="data_A",
-            metadata={"reference": {"path": "ColA/doc/ColGroup/doc1"}},
+            metadata={"reference": {"path": "ColA/doc/ColGroup/doc1", "type": "firestore_type"}},
         ),
         Document(
             page_content="data_B",
-            metadata={"reference": {"path": "ColB/doc/ColGroup/doc2"}},
+            metadata={"reference": {"path": "ColB/doc/ColGroup/doc2", "type": "firestore_type"}},
         ),
     ]
 
@@ -296,7 +296,7 @@ def test_firestore_load_from_doc_ref(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
 
     doc_to_insert = [
-        Document(page_content="data", metadata={"reference": {"path": "foo/bar"}})
+        Document(page_content="data", metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}})
     ]
 
     doc_ref = client.collection("foo").document("bar")
