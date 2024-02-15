@@ -83,7 +83,10 @@ def test_convert_firestore_document_default_fields(
             ),
             Document(
                 page_content="data",
-                metadata={"reference": {"path": "abc/xyz", "type": "firestore_type"}, "data_field": "data"},
+                metadata={
+                    "reference": {"path": "abc/xyz", "type": "firestore_type"},
+                    "data_field": "data",
+                },
             ),
             ["data_field"],
             ["data_field"],
@@ -99,7 +102,10 @@ def test_convert_firestore_document_default_fields(
             ),
             Document(
                 page_content="val",
-                metadata={"reference": {"path": "abc/xyz", "type": "firestore_type"}, "field_1": 1},
+                metadata={
+                    "reference": {"path": "abc/xyz", "type": "firestore_type"},
+                    "field_1": 1,
+                },
             ),
             ["field_2"],
             ["field_1"],
@@ -120,7 +126,10 @@ def test_convert_firestore_document_default_fields(
             ),
             Document(
                 page_content="{'field_2': 'val_2', 'field_3': 'val_3'}",
-                metadata={"reference": {"path": "abc/xyz", "type": "firestore_type"}, "field_1": "val_1"},
+                metadata={
+                    "reference": {"path": "abc/xyz", "type": "firestore_type"},
+                    "field_1": "val_1",
+                },
             ),
             ["field_2", "field_3"],
             ["field_1"],
@@ -191,8 +200,14 @@ def test_convert_firestore_document_with_filters(
     "langchain_doc,firestore_doc",
     [
         (
-            Document(page_content="value", metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}}),
-            {"reference": {"path": "foo/bar", "type": "firestore_type"}, "data": {"page_content": "value"}},
+            Document(
+                page_content="value",
+                metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
+            ),
+            {
+                "reference": {"path": "foo/bar", "type": "firestore_type"},
+                "data": {"page_content": "value"},
+            },
         ),
         (
             Document(page_content="value", metadata={"reference": {}}),
@@ -232,7 +247,10 @@ def test_convert_firestore_document_with_filters(
         (
             Document(
                 page_content='{"field_1": "val_1", "field_2": "val_2"}',
-                metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}, "field_3": "val_3"},
+                metadata={
+                    "reference": {"path": "foo/bar", "type": "firestore_type"},
+                    "field_3": "val_3",
+                },
             ),
             {
                 "reference": {"path": "foo/bar", "type": "firestore_type"},
@@ -240,7 +258,10 @@ def test_convert_firestore_document_with_filters(
             },
         ),
         (
-            Document(page_content="", metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}}),
+            Document(
+                page_content="",
+                metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
+            ),
             {"reference": {"path": "foo/bar", "type": "firestore_type"}, "data": {}},
         ),
         (
@@ -252,7 +273,10 @@ def test_convert_firestore_document_with_filters(
                     "field_2": "val_2",
                 },
             ),
-            {"reference": {"path": "foo/bar", "type": "firestore_type"}, "data": {"point": GeoPoint(1, 2), "field_2": "val_2"}},
+            {
+                "reference": {"path": "foo/bar", "type": "firestore_type"},
+                "data": {"point": GeoPoint(1, 2), "field_2": "val_2"},
+            },
         ),
         (Document(page_content="", metadata={}), {"reference": None, "data": {}}),
         (

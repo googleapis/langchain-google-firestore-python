@@ -144,11 +144,17 @@ class FirestoreSaver:
                     doc_ref = self.client.collection(self.collection).document()
                 elif doc_id:
                     doc_ref = DocumentReference(*doc_id.split("/"), client=self.client)
-                elif ("reference" in document_dict) and ("type" in document_dict["reference"]) and (document_dict["reference"]["type"] == TYPE) and isinstance(document_dict["reference"]["path"],str):
+                elif (
+                    ("reference" in document_dict)
+                    and ("type" in document_dict["reference"])
+                    and (document_dict["reference"]["type"] == TYPE)
+                    and isinstance(document_dict["reference"]["path"], str)
+                ):
                     print("debug")
                     print(document_dict)
                     doc_ref = DocumentReference(
-                        *document_dict["reference"]["path"].split("/"), client=self.client
+                        *document_dict["reference"]["path"].split("/"),
+                        client=self.client,
                     )
                 else:
                     continue
@@ -182,8 +188,12 @@ class FirestoreSaver:
                     document_dict = DocumentConverter.convert_langchain_document(
                         doc, self.client
                     )
-                    if ("reference" in document_dict) and ("type" in document_dict["reference"]) and (document_dict["reference"]["type"] == TYPE):
-                      document_path = document_dict["reference"]["path"]
+                    if (
+                        ("reference" in document_dict)
+                        and ("type" in document_dict["reference"])
+                        and (document_dict["reference"]["type"] == TYPE)
+                    ):
+                        document_path = document_dict["reference"]["path"]
 
                 if not document_path:
                     continue

@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 TYPE = "firestore_type"
 
+
 class DocumentConverter:
     @staticmethod
     def convert_firestore_document(
@@ -35,52 +36,33 @@ class DocumentConverter:
         data_doc = document.to_dict()
         metadata = {"reference": {"path": document.reference.path, "type": TYPE}}
 
-        set_page_fields = set(page_content_fields or [])
-        set_metadata_fields = set(metadata_fields or [])
-        shared_keys = set_metadata_fields & set_page_fields
+        set_page_fields = set(
+            page_content_fields or (data_doc.keys() - set(metadata_fields))
+        )
+        set_metadata_fields = set(
+            metadata_fields or (data_doc.keys() - set_page_fields)
+        )
 
         page_content = {}
-        for k in sorted(shared_keys):
-            if k in data_doc:
-                val = DocumentConverter._convert_from_firestore(data_doc.pop(k))
-                page_content[k] = val
-                metadata[k] = val
 
         metadata.update(
             {
-                k: DocumentConverter._convert_from_firestore(data_doc.pop(k))
-                for k in sorted(set_metadata_fields - shared_keys)
+                k: DocumentConverter._convert_from_firestore(data_doc[k])
+                for k in sorted(set_metadata_fields)
                 if k in data_doc
             }
         )
 
-        if not set_page_fields:
-            # write all fields
-            keys = sorted(data_doc.keys())
-            page_content = {
-                k: DocumentConverter._convert_from_firestore(data_doc.pop(k))
-                for k in keys
+        page_content.update(
+            {
+                k: DocumentConverter._convert_from_firestore(data_doc[k])
+                for k in sorted(set_page_fields)
+                if k in data_doc
             }
-        else:
-            page_content.update(
-                {
-                    k: DocumentConverter._convert_from_firestore(data_doc.pop(k))
-                    for k in sorted(set_page_fields - shared_keys)
-                    if k in data_doc
-                }
-            )
+        )
 
         if len(page_content) == 1:
             page_content = page_content.popitem()[1]
-
-        if not set_metadata_fields:
-            # metadata fields not specified. Write remaining fields into metadata
-            metadata.update(
-                {
-                    k: DocumentConverter._convert_from_firestore(v)
-                    for k, v in sorted(data_doc.items())
-                }
-            )
 
         return Document(page_content=str(page_content), metadata=metadata)
 
@@ -120,7 +102,11 @@ class DocumentConverter:
         if isinstance(val, DocumentReference):
             val_converted = {"path": val.path, "type": TYPE}
         elif isinstance(val, GeoPoint):
-          val_converted = {"latitude": val.latitude, "longitude": val.longitude, "type": TYPE}
+            val_converted = {
+                "latitude": val.latitude,
+                "longitude": val.longitude,
+                "type": TYPE,
+            }
         elif isinstance(val, dict):
             val_converted = {
                 k: DocumentConverter._convert_from_firestore(v) for k, v in val.items()
@@ -135,11 +121,21 @@ class DocumentConverter:
         val_converted = val
         if isinstance(val, dict):
             l = len(val)
-            if ("path" in val) and isinstance(val["path"], str) and ("type" in val) and (val["type"]==TYPE):
+            if (
+                ("path" in val)
+                and isinstance(val["path"], str)
+                and ("type" in val)
+                and (val["type"] == TYPE)
+            ):
                 val_converted = DocumentReference(
                     *val["path"].split("/"), client=client
                 )
-            elif ("latitude" in val) and ("longitude" in val) and ("type" in val) and (val["type"]==TYPE):
+            elif (
+                ("latitude" in val)
+                and ("longitude" in val)
+                and ("type" in val)
+                and (val["type"] == TYPE)
+            ):
                 val_converted = GeoPoint(val["latitude"], val["longitude"])
             else:
                 val_converted = {
