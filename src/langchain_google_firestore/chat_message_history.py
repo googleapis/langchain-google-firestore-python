@@ -60,9 +60,9 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
     def _load_messages(self) -> None:
         doc = self.doc_ref.get()
         if doc.exists:
-            encoded_messages = doc.to_dict()["messages"]
-            if "messages" in encoded_messages:
-                self.messages = MessageConverter.decode_messages(encoded_messages)
+            data_messages = doc.to_dict()
+            if "messages" in data_messages:
+              self.messages = MessageConverter.decode_messages(data_messages["messages"])
 
     def add_message(self, message: BaseMessage) -> None:
         self.messages.append(message)
