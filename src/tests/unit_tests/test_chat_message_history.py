@@ -18,7 +18,7 @@ from typing import List
 from unittest import TestCase
 
 import pytest
-from google.cloud.firestore import Client
+from google.cloud.firestore import Client  # type: ignore
 from langchain_core.messages import AIMessage, HumanMessage
 
 from langchain_google_firestore import FirestoreChatMessageHistory
