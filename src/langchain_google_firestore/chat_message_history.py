@@ -17,14 +17,11 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 
-from google.cloud import firestore
-from google.cloud.firestore_v1.services.firestore.transports.base import (
-    DEFAULT_CLIENT_INFO,
-)
+from google.cloud import firestore  # type: ignore
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, messages_from_dict
 
-USER_AGENT = "langchain-google-firestore-python"
+USER_AGENT = "langchain-google-firestore-python:chat_history"
 DEFAULT_COLLECTION = "ChatHistory"
 
 if TYPE_CHECKING:
@@ -45,13 +42,13 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
             collection: The single `/`-delimited path to a Firestore collection.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        if client:
-            self.client = client
+        self.client = client or firestore.Client()
+        client_agent = self.client._client_info.user_agent
+        if not client_agent:
             self.client._client_info.user_agent = USER_AGENT
-        else:
-            client_info = DEFAULT_CLIENT_INFO
-            client_info.user_agent = USER_AGENT
-            self.client = firestore.Client(client_info=client_info)
+        elif USER_AGENT not in client_agent:
+            self.client._client_info.user_agent = " ".join([client_agent, USER_AGENT])
+
         self.session_id = session_id
         self.doc_ref = self.client.collection(collection).document(session_id)
         self.messages: List[BaseMessage] = []
