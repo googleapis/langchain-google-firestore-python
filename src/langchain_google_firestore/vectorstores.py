@@ -16,51 +16,33 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TypeVar
 
+import more_itertools
+from google.cloud.firestore import (  # type: ignore
+    Client,
+    CollectionGroup,
+    DocumentReference,
+    Query,
+)
+from google.cloud.firestore_v1.vector import Vector  # type: ignore
+from langchain_core.documents import Document  # type: ignore
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
 from langchain_google_firestore.utility.distance_strategy import DistanceStrategy
 
-USER_AGENT = "LangChain"
+USER_AGENT = "langchain-google-firestore-python:vectorstore"
 IMPORT_ERROR_MSG = """`google-cloud-firestore` package not found,
 please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
-
-if TYPE_CHECKING:
-    from google.cloud.firestore import (  # type: ignore
-        Client,
-        CollectionGroup,
-        DocumentReference,
-        Query,
-    )
-    from langchain_core.documents import Document
 
 
 VST = TypeVar("VST", bound=VectorStore)
 
 
 class FirestoreVectorStore(VectorStore):
-    """Interface for vector store.
-
-    Example:
-        .. code-block:: python
-
-            from langchain_google_firestore.vectorstores import FirestoreVectorStore
-
-            vectorstore = FirestoreVectorStore()
-    """
+    """Interface for vector store."""
 
     _DEFAULT_FIRESTORE_DATABASE = "(default)"
 
@@ -109,21 +91,27 @@ class FirestoreVectorStore(VectorStore):
         """
         try:
             from google.cloud import firestore
-            from google.cloud.firestore_v1.services.firestore.transports.base import (
-                DEFAULT_CLIENT_INFO,
-            )
         except ModuleNotFoundError as exc:
             raise ImportError(IMPORT_ERROR_MSG) from exc
 
-        if client:
-            self.client = client
-            self.client._user_agent = USER_AGENT
-        else:
-            client_info = DEFAULT_CLIENT_INFO
-            client_info.user_agent = USER_AGENT
-            self.client = firestore.Client(client_info=client_info)
+        # Check if the client is provided, otherwise create a new client with
+        # the default client info.
+        self.client = client or firestore.Client()
+
+        client_agent = self.client._client_info.user_agent
+        if not client_agent:
+            self.client._client_info.user_agent = USER_AGENT
+        elif USER_AGENT not in client_agent:
+            self.client._client_info.user_agent = " ".join([client_agent, USER_AGENT])
 
         self.source = source
+        if isinstance(source, str):
+            self.source = self.client.collection(source)
+        elif isinstance(source, DocumentReference):
+            self.source = source.parent
+        elif isinstance(source, CollectionGroup):
+            self.source = source
+
         self.embedding = embedding
         self.content_field = content_field
         self.metadata_fields = metadata_fields
@@ -139,18 +127,42 @@ class FirestoreVectorStore(VectorStore):
         self,
         texts: Iterable[str],
         metadatas: Optional[List[dict]] = None,
+        collection: Optional[str] = None,
         **kwargs: Any,
     ) -> List[str]:
-        raise NotImplementedError
+        if isinstance(self.source, CollectionGroup) and not collection:
+            raise ValueError(
+                "The `collection` path must be provided when using CollectionGroup."
+            )
+
+        ids = []
+        db_batch = self.client.batch()
+
+        for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
+            texts_embs = self.embedding.embed_documents(batch)
+            for i, text in enumerate(batch):
+                doc = self.source.document()
+                ids.append(doc.id)
+                data = {
+                    self.content_field: text,
+                    self.text_embedding_field: Vector(texts_embs[i]),
+                }
+                if metadatas:
+                    data.update(metadatas[i])
+                db_batch.set(doc, data)
+            db_batch.commit()
+
+        return ids
 
     async def aadd_texts(
         self,
         texts: Iterable[str],
         metadatas: Optional[List[dict]] = None,
+        collection: Optional[str] = None,
         **kwargs: Any,
     ) -> List[str]:
         return await asyncio.get_running_loop().run_in_executor(
-            None, partial(self.add_texts, **kwargs), texts, metadatas
+            None, partial(self.add_texts, **kwargs), texts, metadatas, collection
         )
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
