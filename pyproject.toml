@@ -1,6 +1,6 @@
 [project]
 name = "langchain-google-firestore"
-version = "0.0.1"
+dynamic = ["version"]
 description = "LangChain integrations for Google Cloud Firestore"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -9,6 +9,9 @@ dependencies = [
     "langchain==0.1.1",
     "google-cloud-firestore==2.14.0"
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "langchain_google_firestore.version.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/googleapis/langchain-google-firestore-python"
