@@ -14,6 +14,8 @@
 
 from unittest.mock import Mock
 
+from google.cloud.firestore import CollectionReference  # type: ignore
+
 from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
 
@@ -34,5 +36,5 @@ def test_firestore_vectorstore_initialization():
     firestore_store = FirestoreVectorStore("my_collection", mocked_embeddings)
 
     # Assertions to verify attribute values and error handling
-    assert firestore_store.source == "my_collection"
+    assert isinstance(firestore_store.source, CollectionReference)
     assert firestore_store.embeddings == mocked_embeddings
