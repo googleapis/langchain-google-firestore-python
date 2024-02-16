@@ -21,7 +21,10 @@ from google.cloud.firestore import (  # type: ignore
 )
 from langchain_core.documents import Document
 
-from langchain_google_firestore.utility.document_converter import DocumentConverter
+from langchain_google_firestore.document_converter import (
+    convert_firestore_document,
+    convert_langchain_document,
+)
 
 
 @pytest.mark.parametrize(
@@ -64,7 +67,7 @@ from langchain_google_firestore.utility.document_converter import DocumentConver
 def test_convert_firestore_document_default_fields(
     document_snapshot, langchain_doc
 ) -> None:
-    return_doc = DocumentConverter.convert_firestore_document(document_snapshot)
+    return_doc = convert_firestore_document(document_snapshot)
 
     assert return_doc == langchain_doc
 
@@ -189,7 +192,7 @@ def test_convert_firestore_document_default_fields(
 def test_convert_firestore_document_with_filters(
     document_snapshot, langchain_doc, page_content_fields, metadata_fields
 ) -> None:
-    return_doc = DocumentConverter.convert_firestore_document(
+    return_doc = convert_firestore_document(
         document_snapshot, page_content_fields, metadata_fields
     )
 
@@ -295,9 +298,7 @@ def test_convert_firestore_document_with_filters(
     ],
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
-    return_doc = DocumentConverter.convert_langchain_document(
-        langchain_doc, pytest.client
-    )
+    return_doc = convert_langchain_document(langchain_doc, pytest.client)
 
     assert return_doc == firestore_doc
 
@@ -329,10 +330,8 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
     ],
 )
 def test_roundtrip_firestore(firestore_doc):
-    langchain_doc = DocumentConverter.convert_firestore_document(firestore_doc)
-    roundtrip_doc = DocumentConverter.convert_langchain_document(
-        langchain_doc, pytest.client
-    )
+    langchain_doc = convert_firestore_document(firestore_doc)
+    roundtrip_doc = convert_langchain_document(langchain_doc, pytest.client)
 
     assert roundtrip_doc["data"] == firestore_doc.to_dict()
     assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path

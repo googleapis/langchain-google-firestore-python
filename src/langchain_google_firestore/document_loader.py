@@ -23,7 +23,7 @@ from google.cloud.firestore import DocumentReference  # type: ignore
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
-from .utility.document_converter import DocumentConverter
+from .document_converter import convert_firestore_document, convert_langchain_document
 
 USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader"
 USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver"
@@ -81,7 +81,7 @@ class FirestoreLoader(BaseLoader):
                 self.source._client._client_info.user_agent = " ".join(
                     [client_agent, USER_AGENT_LOADER]
                 )
-            yield DocumentConverter.convert_firestore_document(self.source.get())
+            yield convert_firestore_document(self.source.get())
         elif isinstance(self.source, str):
             query = self.client.collection(self.source)
         else:
@@ -96,7 +96,7 @@ class FirestoreLoader(BaseLoader):
 
         if query:
             for document_snapshot in query.stream():
-                yield DocumentConverter.convert_firestore_document(
+                yield convert_firestore_document(
                     document_snapshot, self.page_content_fields, self.metadata_fields
                 )
 
@@ -150,9 +150,7 @@ class FirestoreSaver:
 
         for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
-                document_dict = DocumentConverter.convert_langchain_document(
-                    doc, self.client
-                )
+                document_dict = convert_langchain_document(doc, self.client)
                 if self.collection:
                     doc_ref = self.client.collection(self.collection).document()
                 elif doc_id:
@@ -198,9 +196,7 @@ class FirestoreSaver:
                 if doc_id:
                     document_path = doc_id
                 elif doc:
-                    document_dict = DocumentConverter.convert_langchain_document(
-                        doc, self.client
-                    )
+                    document_dict = convert_langchain_document(doc, self.client)
                     if (
                         ("reference" in document_dict)
                         and ("type" in document_dict["reference"])
