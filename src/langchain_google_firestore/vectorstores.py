@@ -39,7 +39,12 @@ please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query  # type: ignore
+    from google.cloud.firestore import (  # type: ignore
+        Client,
+        CollectionGroup,
+        DocumentReference,
+        Query,
+    )
     from langchain_core.documents import Document
 
 
