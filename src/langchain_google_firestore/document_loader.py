@@ -74,13 +74,13 @@ class FirestoreLoader(BaseLoader):
                 self.source._client, USER_AGENT_LOADER
             )
             yield convert_firestore_document(self.source.get())
-        elif isinstance(self.source, str):
-            query = self.client.collection(self.source)
         else:
-            query = self.source
-            client_with_user_agent(query._client, USER_AGENT_LOADER)
+            if isinstance(self.source, str):
+                query = self.client.collection(self.source)
+            else:
+                query = self.source
+                client_with_user_agent(query._client, USER_AGENT_LOADER)
 
-        if query:
             for document_snapshot in query.stream():
                 yield convert_firestore_document(
                     document_snapshot, self.page_content_fields, self.metadata_fields
@@ -144,7 +144,9 @@ class FirestoreSaver:
                         client=self.client,
                     )
                 else:
-                    continue
+                    raise ValueError(
+                        "Unable to construct document_path for document: " + str(doc)
+                    )
 
                 db_batch.set(
                     reference=doc_ref, document_data=document_dict["data"], merge=merge
@@ -181,9 +183,13 @@ class FirestoreSaver:
                         == TypeEnum.DOC_REF
                     ):
                         document_path = document_dict["reference"]["path"]
-
                 if not document_path:
-                    continue
+                    raise ValueError(
+                        "Unable to construct document_path for document: "
+                        + str(doc)
+                        + "or doc_id: "
+                        + str(doc_id)
+                    )
                 doc_ref = DocumentReference(
                     *document_path.split("/"), client=self.client
                 )

@@ -53,10 +53,10 @@ def convert_firestore_document(
 
     for k in sorted(set_metadata_fields):
         if k in data_doc:
-            metadata[k]=_convert_from_firestore(data_doc[k])
+            metadata[k] = _convert_from_firestore(data_doc[k])
     for k in sorted(set_page_fields):
         if k in data_doc:
-            page_content[k]=_convert_from_firestore(data_doc[k])
+            page_content[k] = _convert_from_firestore(data_doc[k])
 
     if len(page_content) == 1:
         page_content = page_content.popitem()[1]
