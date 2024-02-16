@@ -12,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from langchain_google_firestore.chat_message_history import FirestoreChatMessageHistory
 from langchain_google_firestore.document_loader import FirestoreLoader, FirestoreSaver
 
 from .version import __version__
 
-__all__ = ["__version__", "FirestoreLoader", "FirestoreSaver"]
+__all__ = [
+    "__version__",
+    "FirestoreChatMessageHistory",
+    "FirestoreLoader",
+    "FirestoreSaver",
+]
