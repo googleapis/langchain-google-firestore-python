@@ -59,30 +59,24 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         if doc.exists:
             data_messages = doc.to_dict()
             if "messages" in data_messages:
-                self.messages = MessageConverter.decode_messages(
-                    data_messages["messages"]
-                )
+                self.messages = decode_messages(data_messages["messages"])
 
     def add_message(self, message: BaseMessage) -> None:
         self.messages.append(message)
         self._upsert_messages()
 
     def _upsert_messages(self) -> None:
-        self.doc_ref.set({"messages": MessageConverter.encode_messages(self.messages)})
+        self.doc_ref.set({"messages": encode_messages(self.messages)})
 
     def clear(self) -> None:
         self.messages = []
         self.doc_ref.delete()
 
 
-class MessageConverter:
-    @staticmethod
-    def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
-        return [str.encode(m.json()) for m in messages]
+def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
+    return [str.encode(m.json()) for m in messages]
 
-    @staticmethod
-    def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
-        dict_messages = [json.loads(m.decode()) for m in messages]
-        return messages_from_dict(
-            [{"type": m["type"], "data": m} for m in dict_messages]
-        )
+
+def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
+    dict_messages = [json.loads(m.decode()) for m in messages]
+    return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])
