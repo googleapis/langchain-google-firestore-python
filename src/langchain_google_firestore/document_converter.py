@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import ast
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, List
 
 from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
@@ -23,7 +24,11 @@ from langchain_core.documents import Document
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
 
-TYPE = "firestore_type"
+
+class TypeEnum(StrEnum):
+    FIRESTORE_TYPE = "firestore_type"
+    DOC_REF = "document_reference"
+    GEOPOINT = "geopoint"
 
 
 def convert_firestore_document(
@@ -32,7 +37,12 @@ def convert_firestore_document(
     metadata_fields: List[str] = [],
 ) -> Document:
     data_doc = document.to_dict()
-    metadata = {"reference": {"path": document.reference.path, "type": TYPE}}
+    metadata = {
+        "reference": {
+            "path": document.reference.path,
+            TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+        }
+    }
 
     set_page_fields = set(
         page_content_fields or (data_doc.keys() - set(metadata_fields))
@@ -41,21 +51,12 @@ def convert_firestore_document(
 
     page_content = {}
 
-    metadata.update(
-        {
-            k: _convert_from_firestore(data_doc[k])
-            for k in sorted(set_metadata_fields)
-            if k in data_doc
-        }
-    )
-
-    page_content.update(
-        {
-            k: _convert_from_firestore(data_doc[k])
-            for k in sorted(set_page_fields)
-            if k in data_doc
-        }
-    )
+    for k in sorted(set_metadata_fields):
+        if k in data_doc:
+            metadata[k]=_convert_from_firestore(data_doc[k])
+    for k in sorted(set_page_fields):
+        if k in data_doc:
+            page_content[k]=_convert_from_firestore(data_doc[k])
 
     if len(page_content) == 1:
         page_content = page_content.popitem()[1]
@@ -72,10 +73,9 @@ def convert_langchain_document(document: Document, client: Client) -> dict:
         data.update(_convert_from_langchain(metadata, client))
 
     if (
-        ("reference" in metadata)
-        and ("path" in metadata["reference"])
-        and ("type" in metadata["reference"])
-        and (metadata["reference"]["type"] == TYPE)
+        metadata.get("reference")
+        and metadata["reference"].get(TypeEnum.FIRESTORE_TYPE.value)
+        == TypeEnum.DOC_REF.value
     ):
         path = metadata["reference"]
         data.pop("reference")
@@ -98,12 +98,15 @@ def _convert_from_firestore(val: Any) -> Any:
     elif isinstance(val, list):
         val_converted = [_convert_from_firestore(v) for v in val]
     elif isinstance(val, DocumentReference):
-        val_converted = {"path": val.path, "type": TYPE}
+        val_converted = {
+            "path": val.path,
+            TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+        }
     elif isinstance(val, GeoPoint):
         val_converted = {
             "latitude": val.latitude,
             "longitude": val.longitude,
-            "type": TYPE,
+            TypeEnum.FIRESTORE_TYPE.value: TypeEnum.GEOPOINT.value,
         }
 
     return val_converted
@@ -111,27 +114,16 @@ def _convert_from_firestore(val: Any) -> Any:
 
 def _convert_from_langchain(val: Any, client: Client) -> Any:
     val_converted = val
-    if isinstance(val, dict):
+    if isinstance(val, list):
+        val_converted = [_convert_from_langchain(v, client) for v in val]
+    elif isinstance(val, dict):
         l = len(val)
-        if (
-            ("path" in val)
-            and isinstance(val["path"], str)
-            and ("type" in val)
-            and (val["type"] == TYPE)
-        ):
+        if val.get(TypeEnum.FIRESTORE_TYPE.value) == TypeEnum.DOC_REF.value:
             val_converted = DocumentReference(*val["path"].split("/"), client=client)
-        elif (
-            ("latitude" in val)
-            and ("longitude" in val)
-            and ("type" in val)
-            and (val["type"] == TYPE)
-        ):
+        elif val.get(TypeEnum.FIRESTORE_TYPE.value) == TypeEnum.GEOPOINT.value:
             val_converted = GeoPoint(val["latitude"], val["longitude"])
         else:
             val_converted = {
                 k: _convert_from_langchain(v, client) for k, v in val.items()
             }
-    elif isinstance(val, list):
-        val_converted = [_convert_from_langchain(v, client) for v in val]
-
     return val_converted

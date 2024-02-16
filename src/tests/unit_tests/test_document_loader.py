@@ -68,7 +68,7 @@ def test_firestore_write_load_batch(test_case: TestCase) -> None:
         expected_docs.append(
             Document(
                 page_content=f"content {i}",
-                metadata={"reference": {"path": mock.ANY, "type": "firestore_type"}},
+                metadata={"reference": {"path": mock.ANY, "firestore_type": "document_reference"}},
             )
         )
 
@@ -92,7 +92,7 @@ def test_firestore_write_with_reference(test_case: TestCase) -> None:
     expected_doc = [
         Document(
             page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "WriteRef/doc", "type": "firestore_type"}},
+            metadata={"reference": {"path": "WriteRef/doc", "firestore_type": "document_reference"}},
         )
     ]
     saver.upsert_documents(expected_doc)
@@ -125,14 +125,14 @@ def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
     doc_to_insert = [
         Document(
             page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
+            metadata={"reference": {"path": "foo/bar", "firestore_type": "document_reference"}},
         )
     ]
 
     expected_doc = [
         Document(
             page_content="{'f1': 1, 'f2': 2}",
-            metadata={"reference": {"path": "WriteId/doc", "type": "firestore_type"}},
+            metadata={"reference": {"path": "WriteId/doc", "firestore_type": "document_reference"}},
         )
     ]
     doc_id = ["WriteId/doc"]
@@ -203,7 +203,7 @@ def test_firestore_load_from_subcollection(test_case: TestCase):
             metadata={
                 "reference": {
                     "path": "collection/doc/subcol/sdoc",
-                    "type": "firestore_type",
+                    "firestore_type": "document_reference",
                 }
             },
         )
@@ -269,7 +269,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             metadata={
                 "reference": {
                     "path": "ColA/doc/ColGroup/doc1",
-                    "type": "firestore_type",
+                    "firestore_type": "document_reference",
                 }
             },
         ),
@@ -278,13 +278,13 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             metadata={
                 "reference": {
                     "path": "ColB/doc/ColGroup/doc2",
-                    "type": "firestore_type",
+                    "firestore_type": "document_reference",
                 }
             },
         ),
         Document(
             page_content="data_C",
-            metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
+            metadata={"reference": {"path": "foo/bar", "firestore_type": "document_reference"}},
         ),
     ]
     expected_docs = [
@@ -293,7 +293,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             metadata={
                 "reference": {
                     "path": "ColA/doc/ColGroup/doc1",
-                    "type": "firestore_type",
+                    "firestore_type": "document_reference",
                 }
             },
         ),
@@ -302,7 +302,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             metadata={
                 "reference": {
                     "path": "ColB/doc/ColGroup/doc2",
-                    "type": "firestore_type",
+                    "firestore_type": "document_reference",
                 }
             },
         ),
@@ -327,7 +327,7 @@ def test_firestore_load_from_doc_ref(test_case: TestCase, client: Client):
     doc_to_insert = [
         Document(
             page_content="data",
-            metadata={"reference": {"path": "foo/bar", "type": "firestore_type"}},
+            metadata={"reference": {"path": "foo/bar", "firestore_type": "document_reference"}},
         )
     ]
 

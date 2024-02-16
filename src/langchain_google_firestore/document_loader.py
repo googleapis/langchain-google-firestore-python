@@ -23,12 +23,15 @@ from google.cloud.firestore import DocumentReference  # type: ignore
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
-from .document_converter import convert_firestore_document, convert_langchain_document
+from .document_converter import (
+    TypeEnum,
+    convert_firestore_document,
+    convert_langchain_document,
+)
 
 USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader"
 USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver"
 WRITE_BATCH_SIZE = 500
-TYPE = "firestore_type"
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
@@ -117,7 +120,7 @@ class FirestoreSaver:
         """
         db_batch = self.client.batch()
 
-        if document_ids and (len(document_ids) != len(documents)):
+        if document_ids and len(document_ids) != len(documents):
             raise ValueError(
                 "`documents` and `document_ids` parameters must be the same length"
             )
@@ -132,10 +135,9 @@ class FirestoreSaver:
                 elif doc_id:
                     doc_ref = DocumentReference(*doc_id.split("/"), client=self.client)
                 elif (
-                    ("reference" in document_dict)
-                    and ("type" in document_dict["reference"])
-                    and (document_dict["reference"]["type"] == TYPE)
-                    and isinstance(document_dict["reference"]["path"], str)
+                    document_dict.get("reference")
+                    and document_dict["reference"].get(TypeEnum.FIRESTORE_TYPE.value)
+                    == TypeEnum.DOC_REF
                 ):
                     doc_ref = DocumentReference(
                         *document_dict["reference"]["path"].split("/"),
@@ -172,9 +174,11 @@ class FirestoreSaver:
                 elif doc:
                     document_dict = convert_langchain_document(doc, self.client)
                     if (
-                        ("reference" in document_dict)
-                        and ("type" in document_dict["reference"])
-                        and (document_dict["reference"]["type"] == TYPE)
+                        document_dict.get("reference")
+                        and document_dict["reference"].get(
+                            TypeEnum.FIRESTORE_TYPE.value
+                        )
+                        == TypeEnum.DOC_REF
                     ):
                         document_path = document_dict["reference"]["path"]
 
