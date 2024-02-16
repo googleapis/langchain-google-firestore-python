@@ -16,4 +16,9 @@ from langchain_google_firestore.document_loader import FirestoreLoader, Firestor
 
 from .version import __version__
 
-__all__ = ["__version__", "FirestoreChatMessageHistory", "FirestoreLoader", "FirestoreSaver"]
+__all__ = [
+    "__version__",
+    "FirestoreChatMessageHistory",
+    "FirestoreLoader",
+    "FirestoreSaver",
+]
