@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from langchain_google_firestore.document_loader import FirestoreLoader, FirestoreSaver
+import pytest
+from google.cloud import firestore  # type: ignore
 
-from .version import __version__
 
-__all__ = ["__version__", "FirestoreLoader", "FirestoreSaver"]
+def pytest_configure():
+    pytest.client = firestore.Client()
