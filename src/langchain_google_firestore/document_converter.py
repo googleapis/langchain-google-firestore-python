@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-import ast
+import json
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, List
 
@@ -25,10 +25,9 @@ if TYPE_CHECKING:
     from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
 
 
-class TypeEnum(StrEnum):
-    FIRESTORE_TYPE = "firestore_type"
-    DOC_REF = "document_reference"
-    GEOPOINT = "geopoint"
+FIRESTORE_TYPE = "firestore_type"
+DOC_REF = "document_reference"
+GEOPOINT = "geopoint"
 
 
 def convert_firestore_document(
@@ -40,7 +39,7 @@ def convert_firestore_document(
     metadata = {
         "reference": {
             "path": document.reference.path,
-            TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+            FIRESTORE_TYPE: DOC_REF,
         }
     }
 
@@ -59,9 +58,11 @@ def convert_firestore_document(
             page_content[k] = _convert_from_firestore(data_doc[k])
 
     if len(page_content) == 1:
-        page_content = page_content.popitem()[1]
+        page_content = str(page_content.popitem()[1])  # type: ignore
+    else:
+        page_content = json.dumps(page_content)  # type: ignore
 
-    return Document(page_content=str(page_content), metadata=metadata)
+    return Document(page_content=page_content, metadata=metadata)  # type: ignore
 
 
 def convert_langchain_document(document: Document, client: Client) -> dict:
@@ -72,17 +73,13 @@ def convert_langchain_document(document: Document, client: Client) -> dict:
     if metadata:
         data.update(_convert_from_langchain(metadata, client))
 
-    if (
-        metadata.get("reference")
-        and metadata["reference"].get(TypeEnum.FIRESTORE_TYPE.value)
-        == TypeEnum.DOC_REF.value
-    ):
+    if metadata.get("reference", {}).get(FIRESTORE_TYPE) == DOC_REF:
         path = metadata["reference"]
         data.pop("reference")
 
     if document.page_content:
         try:
-            content_dict = ast.literal_eval(document.page_content)
+            content_dict = json.loads(document.page_content)
         except (ValueError, SyntaxError):
             content_dict = {"page_content": document.page_content}
         converted_page = _convert_from_langchain(content_dict, client)
@@ -100,13 +97,13 @@ def _convert_from_firestore(val: Any) -> Any:
     elif isinstance(val, DocumentReference):
         val_converted = {
             "path": val.path,
-            TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+            FIRESTORE_TYPE: DOC_REF,
         }
     elif isinstance(val, GeoPoint):
         val_converted = {
             "latitude": val.latitude,
             "longitude": val.longitude,
-            TypeEnum.FIRESTORE_TYPE.value: TypeEnum.GEOPOINT.value,
+            FIRESTORE_TYPE: GEOPOINT,
         }
 
     return val_converted
@@ -118,9 +115,9 @@ def _convert_from_langchain(val: Any, client: Client) -> Any:
         val_converted = [_convert_from_langchain(v, client) for v in val]
     elif isinstance(val, dict):
         l = len(val)
-        if val.get(TypeEnum.FIRESTORE_TYPE.value) == TypeEnum.DOC_REF.value:
+        if val.get(FIRESTORE_TYPE) == DOC_REF:
             val_converted = DocumentReference(*val["path"].split("/"), client=client)
-        elif val.get(TypeEnum.FIRESTORE_TYPE.value) == TypeEnum.GEOPOINT.value:
+        elif val.get(FIRESTORE_TYPE) == GEOPOINT:
             val_converted = GeoPoint(val["latitude"], val["longitude"])
         else:
             val_converted = {

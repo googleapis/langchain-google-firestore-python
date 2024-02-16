@@ -22,7 +22,9 @@ from google.cloud.firestore import (  # type: ignore
 from langchain_core.documents import Document
 
 from langchain_google_firestore.document_converter import (
-    TypeEnum,
+    DOC_REF,
+    FIRESTORE_TYPE,
+    GEOPOINT,
     convert_firestore_document,
     convert_langchain_document,
 )
@@ -41,11 +43,11 @@ from langchain_google_firestore.document_converter import (
                 update_time=None,
             ),
             Document(
-                page_content="{'field_1': 'data_1', 'field_2': 2}",
+                page_content='{"field_1": "data_1", "field_2": 2}',
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     }
                 },
             ),
@@ -63,12 +65,12 @@ from langchain_google_firestore.document_converter import (
                 update_time=None,
             ),
             Document(
-                page_content="{'field_1': {'latitude': 1, 'longitude': 2, 'firestore_type': 'geopoint'}, "
-                + "'field_2': ['data', 2, {'nested': {'path': 'abc/xyz', 'firestore_type': 'document_reference'}}]}",
+                page_content='{"field_1": {"latitude": 1, "longitude": 2, "firestore_type": "geopoint"}, '
+                + '"field_2": ["data", 2, {"nested": {"path": "abc/xyz", "firestore_type": "document_reference"}}]}',
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     }
                 },
             ),
@@ -100,7 +102,7 @@ def test_convert_firestore_document_default_fields(
                 metadata={
                     "reference": {
                         "path": "abc/xyz",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "data_field": "data",
                 },
@@ -122,7 +124,7 @@ def test_convert_firestore_document_default_fields(
                 metadata={
                     "reference": {
                         "path": "abc/xyz",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "field_1": 1,
                 },
@@ -145,11 +147,11 @@ def test_convert_firestore_document_default_fields(
                 update_time=None,
             ),
             Document(
-                page_content="{'field_2': 'val_2', 'field_3': 'val_3'}",
+                page_content='{"field_2": "val_2", "field_3": "val_3"}',
                 metadata={
                     "reference": {
                         "path": "abc/xyz",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "field_1": "val_1",
                 },
@@ -172,11 +174,11 @@ def test_convert_firestore_document_default_fields(
                 update_time=None,
             ),
             Document(
-                page_content="{'field_2': 'val_2', 'field_3': 'val_3'}",
+                page_content='{"field_2": "val_2", "field_3": "val_3"}',
                 metadata={
                     "reference": {
                         "path": "abc/xyz",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "field_1": "val_1",
                     "field_4": "val_4",
@@ -200,11 +202,11 @@ def test_convert_firestore_document_default_fields(
                 update_time=None,
             ),
             Document(
-                page_content="{'field_2': 'val_2', 'field_4': 'val_4'}",
+                page_content='{"field_2": "val_2", "field_4": "val_4"}',
                 metadata={
                     "reference": {
                         "path": "abc/xyz",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "field_1": "val_1",
                     "field_3": "val_3",
@@ -234,14 +236,14 @@ def test_convert_firestore_document_with_filters(
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     }
                 },
             ),
             {
                 "reference": {
                     "path": "foo/bar",
-                    TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                    FIRESTORE_TYPE: DOC_REF,
                 },
                 "data": {"page_content": "value"},
             },
@@ -269,18 +271,18 @@ def test_convert_firestore_document_with_filters(
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "metadata_field": {
                         "path": "abc/xyz",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                 },
             ),
             {
                 "reference": {
                     "path": "foo/bar",
-                    TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                    FIRESTORE_TYPE: DOC_REF,
                 },
                 "data": {
                     "page_content": "value",
@@ -296,7 +298,7 @@ def test_convert_firestore_document_with_filters(
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "field_3": "val_3",
                 },
@@ -304,7 +306,7 @@ def test_convert_firestore_document_with_filters(
             {
                 "reference": {
                     "path": "foo/bar",
-                    TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                    FIRESTORE_TYPE: DOC_REF,
                 },
                 "data": {"field_1": "val_1", "field_2": "val_2", "field_3": "val_3"},
             },
@@ -315,14 +317,14 @@ def test_convert_firestore_document_with_filters(
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     }
                 },
             ),
             {
                 "reference": {
                     "path": "foo/bar",
-                    TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                    FIRESTORE_TYPE: DOC_REF,
                 },
                 "data": {},
             },
@@ -333,12 +335,12 @@ def test_convert_firestore_document_with_filters(
                 metadata={
                     "reference": {
                         "path": "foo/bar",
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                        FIRESTORE_TYPE: DOC_REF,
                     },
                     "point": {
                         "latitude": 1,
                         "longitude": 2,
-                        TypeEnum.FIRESTORE_TYPE.value: TypeEnum.GEOPOINT.value,
+                        FIRESTORE_TYPE: GEOPOINT,
                     },
                     "field_2": "val_2",
                 },
@@ -346,7 +348,7 @@ def test_convert_firestore_document_with_filters(
             {
                 "reference": {
                     "path": "foo/bar",
-                    TypeEnum.FIRESTORE_TYPE.value: TypeEnum.DOC_REF.value,
+                    FIRESTORE_TYPE: DOC_REF,
                 },
                 "data": {"point": GeoPoint(1, 2), "field_2": "val_2"},
             },
@@ -369,7 +371,6 @@ def test_convert_firestore_document_with_filters(
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
     return_doc = convert_langchain_document(langchain_doc, pytest.client)
-
     assert return_doc == firestore_doc
 
 

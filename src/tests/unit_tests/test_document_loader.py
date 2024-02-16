@@ -96,7 +96,7 @@ def test_firestore_write_with_reference(test_case: TestCase) -> None:
 
     expected_doc = [
         Document(
-            page_content="{'f1': 1, 'f2': 2}",
+            page_content='{"f1": 1, "f2": 2}',
             metadata={
                 "reference": {
                     "path": "WriteRef/doc",
@@ -120,7 +120,7 @@ def test_firestore_write_with_reference(test_case: TestCase) -> None:
 
 def test_firestore_write_doc_id_error(test_case: TestCase) -> None:
     saver = FirestoreSaver()
-    doc_to_insert = [Document(page_content="{'f1': 1, 'f2': 2}")]
+    doc_to_insert = [Document(page_content='{"f1": 1, "f2": 2}')]
     doc_id = ["a/b", "c/d"]
 
     test_case.assertRaises(
@@ -134,7 +134,7 @@ def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
 
     doc_to_insert = [
         Document(
-            page_content="{'f1': 1, 'f2': 2}",
+            page_content='{"f1": 1, "f2": 2}',
             metadata={
                 "reference": {"path": "foo/bar", "firestore_type": "document_reference"}
             },
@@ -143,7 +143,7 @@ def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
 
     expected_doc = [
         Document(
-            page_content="{'f1': 1, 'f2': 2}",
+            page_content='{"f1": 1, "f2": 2}',
             metadata={
                 "reference": {
                     "path": "WriteId/doc",
@@ -169,9 +169,9 @@ def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
 @pytest.mark.parametrize(
     "page_fields,metadata_fields,expected_page_content,expected_metadata",
     [
-        ([], [], "{'f1': 'v1', 'f2': 'v2', 'f3': 'v3'}", {"reference": mock.ANY}),
+        ([], [], '{"f1": "v1", "f2": "v2", "f3": "v3"}', {"reference": mock.ANY}),
         (["f1"], [], "v1", {"reference": mock.ANY, "f2": "v2", "f3": "v3"}),
-        ([], ["f2"], "{'f1': 'v1', 'f3': 'v3'}", {"reference": mock.ANY, "f2": "v2"}),
+        ([], ["f2"], '{"f1": "v1", "f3": "v3"}', {"reference": mock.ANY, "f2": "v2"}),
         (["f1"], ["f2"], "v1", {"reference": mock.ANY, "f2": "v2"}),
         (["f2"], ["f2"], "v2", {"reference": mock.ANY, "f2": "v2"}),
     ],
@@ -191,7 +191,7 @@ def test_firestore_load_with_fields(
     )
 
     doc_to_insert = [
-        Document(page_content="{'f1': 'v1', 'f2': 'v2', 'f3': 'v3'}", metadata={})
+        Document(page_content='{"f1": "v1", "f2": "v2", "f3": "v3"}', metadata={})
     ]
     expected_doc = [
         Document(page_content=expected_page_content, metadata=expected_metadata)
@@ -244,18 +244,18 @@ def test_firestore_load_from_query(test_case: TestCase, client: Client):
     loader_cleanup = FirestoreLoader("WriteQuery")
 
     docs_to_insert = [
-        Document(page_content="{'num': 20, 'region': 'west_coast'}"),
-        Document(page_content="{'num': 20, 'region': 'south_coast'}"),
-        Document(page_content="{'num': 30, 'region': 'west_coast'}"),
-        Document(page_content="{'num': 0, 'region': 'east_coast'}"),
+        Document(page_content='{"num": 20, "region": "west_coast"}'),
+        Document(page_content='{"num": 20, "region": "south_coast"}'),
+        Document(page_content='{"num": 30, "region": "west_coast"}'),
+        Document(page_content='{"num": 0, "region": "east_coast"}'),
     ]
     expected_docs = [
         Document(
-            page_content="{'num': 20, 'region': 'west_coast'}",
+            page_content='{"num": 20, "region": "west_coast"}',
             metadata={"reference": mock.ANY},
         ),
         Document(
-            page_content="{'num': 30, 'region': 'west_coast'}",
+            page_content='{"num": 30, "region": "west_coast"}',
             metadata={"reference": mock.ANY},
         ),
     ]

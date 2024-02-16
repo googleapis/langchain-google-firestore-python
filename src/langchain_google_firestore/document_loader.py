@@ -24,7 +24,8 @@ from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
 from .document_converter import (
-    TypeEnum,
+    DOC_REF,
+    FIRESTORE_TYPE,
     convert_firestore_document,
     convert_langchain_document,
 )
@@ -32,6 +33,7 @@ from .document_converter import (
 USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader"
 USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver"
 WRITE_BATCH_SIZE = 500
+
 
 if TYPE_CHECKING:
     from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
@@ -134,11 +136,7 @@ class FirestoreSaver:
                     doc_ref = self.client.collection(self.collection).document()
                 elif doc_id:
                     doc_ref = DocumentReference(*doc_id.split("/"), client=self.client)
-                elif (
-                    document_dict.get("reference")
-                    and document_dict["reference"].get(TypeEnum.FIRESTORE_TYPE.value)
-                    == TypeEnum.DOC_REF
-                ):
+                elif document_dict.get("reference", {}).get(FIRESTORE_TYPE) == DOC_REF:
                     doc_ref = DocumentReference(
                         *document_dict["reference"]["path"].split("/"),
                         client=self.client,
@@ -176,11 +174,8 @@ class FirestoreSaver:
                 elif doc:
                     document_dict = convert_langchain_document(doc, self.client)
                     if (
-                        document_dict.get("reference")
-                        and document_dict["reference"].get(
-                            TypeEnum.FIRESTORE_TYPE.value
-                        )
-                        == TypeEnum.DOC_REF
+                        document_dict.get("reference", {}).get(FIRESTORE_TYPE)
+                        == DOC_REF
                     ):
                         document_path = document_dict["reference"]["path"]
                 if not document_path:
