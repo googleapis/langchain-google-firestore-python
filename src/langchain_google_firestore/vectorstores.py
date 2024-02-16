@@ -25,12 +25,11 @@ from google.cloud.firestore import (  # type: ignore
     DocumentReference,
     Query,
 )
+from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_core.documents import Document  # type: ignore
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
-
-from langchain_google_firestore.utility.distance_strategy import DistanceStrategy
 
 USER_AGENT = "langchain-google-firestore-python:vectorstore"
 IMPORT_ERROR_MSG = """`google-cloud-firestore` package not found,
@@ -55,7 +54,7 @@ class FirestoreVectorStore(VectorStore):
         metadata_fields: Optional[List[str]] = None,
         ignore_metadata_fields: Optional[List[str]] = None,
         text_embedding_field: Optional[str] = "embeddings",
-        distance_strategy: Optional[DistanceStrategy] = DistanceStrategy.COSINE,
+        distance_strategy: Optional[DistanceMeasure] = DistanceMeasure.COSINE,
     ) -> None:
         """Constructor for FirestoreVectorStore.
 
@@ -104,12 +103,11 @@ class FirestoreVectorStore(VectorStore):
         elif USER_AGENT not in client_agent:
             self.client._client_info.user_agent = " ".join([client_agent, USER_AGENT])
 
-        self.source = source
         if isinstance(source, str):
             self.source = self.client.collection(source)
         elif isinstance(source, DocumentReference):
             self.source = source.parent
-        elif isinstance(source, CollectionGroup):
+        else:
             self.source = source
 
         self.embedding = embedding
