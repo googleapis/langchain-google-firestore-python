@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import Mock, patch
-
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from unittest.mock import Mock
 
 from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
@@ -32,14 +30,9 @@ def test_firestore_vectorstore_initialization():
     mocked_embeddings.model = "models/embedding-001"
     mocked_embeddings.google_api_key = "test_api_key"
 
-    # Patch GoogleGenerativeAIEmbeddings constructor
-    with patch(
-        "langchain_google_genai.GoogleGenerativeAIEmbeddings",
-        return_value=mocked_embeddings,
-    ):
-        # Create FirestoreVectorStore instance
-        firestore_store = FirestoreVectorStore("my_collection", mocked_embeddings)
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore("my_collection", mocked_embeddings)
 
-        # Assertions to verify attribute values and error handling
-        assert firestore_store.source == "my_collection"
-        assert firestore_store.embeddings == mocked_embeddings
+    # Assertions to verify attribute values and error handling
+    assert firestore_store.source == "my_collection"
+    assert firestore_store.embeddings == mocked_embeddings
