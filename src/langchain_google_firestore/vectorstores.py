@@ -31,8 +31,17 @@ from typing import (
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
+from langchain_google_firestore.utility.distance_strategy import DistanceStrategy
+
+
+USER_AGENT = "LangChain"
+IMPORT_ERROR_MSG = "`google-cloud-firestore` package not found, please run `pip3 install google-cloud-firestore`"
+WRITE_BATCH_SIZE = 500
+
 if TYPE_CHECKING:
     from langchain_core.documents import Document
+    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
+
 
 VST = TypeVar("VST", bound=VectorStore)
 
@@ -47,6 +56,75 @@ class FirestoreVectorStore(VectorStore):
 
             vectorstore = FirestoreVectorStore()
     """
+
+    _DEFAULT_FIRESTORE_DATABASE = "(default)"
+
+    def __init__(
+        self,
+        source: Query | CollectionGroup | DocumentReference | str,
+        embeddings: Embeddings,
+        client: Optional[Client] = None,
+        content_field: str = "content",
+        metadata_fields: Optional[List[str]] = None,
+        ignore_metadata_fields: Optional[List[str]] = None,
+        text_embedding_field: Optional[str] = "embeddings",
+        distance_strategy: Optional[DistanceStrategy] = DistanceStrategy.COSINE,
+    ) -> None:
+        """Constructor for FirestoreVectorStore.
+
+        Args:
+            source (Query | CollectionGroup | DocumentReference | str): The source
+                collection or document reference to store the data.
+            embeddings (Embeddings): The embeddings to use for the vector store.
+            client (Optional[Client], optional): The Firestore client to use. If
+                not provided, a new client will be created. Defaults to None.
+            content_field (str, optional): The field name to store the content
+                data. Defaults to "content".
+            metadata_fields (Optional[List[str]], optional): The list of metadata
+                fields to store. Defaults to None.
+            ignore_metadata_fields (Optional[List[str]], optional): The list of
+                metadata fields to ignore. Defaults to None.
+            text_embedding_field (Optional[str], optional): The field name to
+                store the text embeddings. Defaults to "embeddings".
+            distance_strategy (Optional[DistanceStrategy], optional): The distance
+                strategy to use for calculating distances between vectors.
+                Defaults to DistanceStrategy.COSINE.
+
+        Raises:
+            ImportError: If the `firestore` package is not found.
+
+        Example:
+            .. code-block:: python
+
+            from langchain_google_firestore.vectorstores import Firestore
+            from langchain.embeddings import GooglePalmEmbeddings
+
+            embeddings = GooglePalmEmbeddings()
+            firestore_vecstore = Firestore(source="my_collection", embeddings=embeddings)
+        """
+        try:
+            from google.cloud import firestore
+            from google.cloud.firestore_v1.services.firestore.transports.base import (
+                DEFAULT_CLIENT_INFO,
+            )
+        except ImportError as exc:
+            raise ImportError(IMPORT_ERROR_MSG) from exc
+
+        if client:
+            self.client = client
+            self.client._user_agent = USER_AGENT
+        else:
+            client_info = DEFAULT_CLIENT_INFO
+            client_info.user_agent = USER_AGENT
+            self.client = firestore.Client(client_info=client_info)
+
+        self.source = source
+        self.embeddings = embeddings
+        self.content_field = content_field
+        self.metadata_fields = metadata_fields
+        self.ignore_metadata_fields = ignore_metadata_fields
+        self.text_embedding_field = text_embedding_field
+        self.distance_strategy = distance_strategy
 
     def add_texts(
         self,
