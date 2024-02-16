@@ -33,14 +33,14 @@ from langchain_core.vectorstores import VectorStore
 
 from langchain_google_firestore.utility.distance_strategy import DistanceStrategy
 
-
 USER_AGENT = "LangChain"
-IMPORT_ERROR_MSG = "`google-cloud-firestore` package not found, please run `pip3 install google-cloud-firestore`"
+IMPORT_ERROR_MSG = """`google-cloud-firestore` package not found,
+please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
-    from langchain_core.documents import Document
     from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
+    from langchain_core.documents import Document
 
 
 VST = TypeVar("VST", bound=VectorStore)
