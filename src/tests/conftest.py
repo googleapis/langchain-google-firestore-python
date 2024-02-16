@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from google.cloud import firestore
+from google.cloud import firestore  # type: ignore
 
 
 def pytest_configure():

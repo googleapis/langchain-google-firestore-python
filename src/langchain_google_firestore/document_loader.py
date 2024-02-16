@@ -20,15 +20,13 @@ from typing import TYPE_CHECKING, Any, Iterator, List, Optional
 import more_itertools
 from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import DocumentReference  # type: ignore
-from google.cloud.firestore_v1.services.firestore.transports.base import (
-    DEFAULT_CLIENT_INFO,
-)
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
 from .utility.document_converter import DocumentConverter
 
-USER_AGENT = "langchain-google-firestore-python"
+USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader"
+USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver"
 WRITE_BATCH_SIZE = 500
 TYPE = "firestore_type"
 
@@ -42,7 +40,7 @@ class FirestoreLoader(BaseLoader):
         source: Query | CollectionGroup | DocumentReference | str,
         page_content_fields: List[str] = [],
         metadata_fields: List[str] = [],
-        client: Optional[Client] = None,
+        client: Client = None,
     ) -> None:
         """Document Loader for Google Cloud Firestore.
         Args:
@@ -56,13 +54,14 @@ class FirestoreLoader(BaseLoader):
                 By default it will write all fields that are not in `page_content` into `metadata`.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        if client:
-            self.client = client
-            self.client._client_info.user_agent = USER_AGENT
-        else:
-            client_info = DEFAULT_CLIENT_INFO
-            client_info.user_agent = USER_AGENT
-            self.client = firestore.Client(client_info=client_info)
+        self.client = client or firestore.Client()
+        client_agent = self.client._client_info.user_agent
+        if not client_agent:
+            self.client._client_info.user_agent = USER_AGENT_LOADER
+        elif USER_AGENT_LOADER not in client_agent:
+            self.client._client_info.user_agent = " ".join(
+                [client_agent, USER_AGENT_LOADER]
+            )
         self.source = source
         self.page_content_fields = page_content_fields
         self.metadata_fields = metadata_fields
@@ -75,13 +74,26 @@ class FirestoreLoader(BaseLoader):
         """A lazy loader for Documents."""
         query = None
         if isinstance(self.source, DocumentReference):
-            self.source._client._client_info.user_agent = USER_AGENT
+            client_agent = self.source._client._client_info.user_agent
+            if not client_agent:
+                self.source._client._client_info.user_agent = USER_AGENT_LOADER
+            elif USER_AGENT_LOADER not in client_agent:
+                self.source._client._client_info.user_agent = " ".join(
+                    [client_agent, USER_AGENT_LOADER]
+                )
             yield DocumentConverter.convert_firestore_document(self.source.get())
         elif isinstance(self.source, str):
             query = self.client.collection(self.source)
         else:
             query = self.source
-            query._client._client_info.user_agent = USER_AGENT
+            client_agent = query._client._client_info.user_agent
+            if not client_agent:
+                query._client._client_info.user_agent = USER_AGENT_LOADER
+            elif USER_AGENT_LOADER not in client_agent:
+                query._client._client_info.user_agent = " ".join(
+                    [client_agent, USER_AGENT_LOADER]
+                )
+
         if query:
             for document_snapshot in query.stream():
                 yield DocumentConverter.convert_firestore_document(
@@ -104,13 +116,14 @@ class FirestoreSaver:
             client: Client for interacting with the Google Cloud Firestore API.
         """
         self.collection = collection
-        if client:
-            self.client = client
-            self.client._client_info.user_agent = USER_AGENT
-        else:
-            client_info = DEFAULT_CLIENT_INFO
-            client_info.user_agent = USER_AGENT
-            self.client = firestore.Client(client_info=client_info)
+        self.client = client or firestore.Client()
+        client_agent = self.client._client_info.user_agent
+        if not client_agent:
+            self.client._client_info.user_agent = USER_AGENT_SAVER
+        elif USER_AGENT_SAVER not in client_agent:
+            self.client._client_info.user_agent = " ".join(
+                [client_agent, USER_AGENT_SAVER]
+            )
 
     def upsert_documents(
         self,
