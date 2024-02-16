@@ -39,7 +39,7 @@ please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
+    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query  # type: ignore
     from langchain_core.documents import Document
 
 
@@ -62,9 +62,9 @@ class FirestoreVectorStore(VectorStore):
     def __init__(
         self,
         source: Query | CollectionGroup | DocumentReference | str,
-        embeddings: Embeddings,
+        embedding: Embeddings,
         client: Optional[Client] = None,
-        content_field: str = "content",
+        content_field="content",
         metadata_fields: Optional[List[str]] = None,
         ignore_metadata_fields: Optional[List[str]] = None,
         text_embedding_field: Optional[str] = "embeddings",
@@ -107,7 +107,7 @@ class FirestoreVectorStore(VectorStore):
             from google.cloud.firestore_v1.services.firestore.transports.base import (
                 DEFAULT_CLIENT_INFO,
             )
-        except ImportError as exc:
+        except ModuleNotFoundError as exc:
             raise ImportError(IMPORT_ERROR_MSG) from exc
 
         if client:
@@ -119,12 +119,16 @@ class FirestoreVectorStore(VectorStore):
             self.client = firestore.Client(client_info=client_info)
 
         self.source = source
-        self.embeddings = embeddings
+        self.embedding = embedding
         self.content_field = content_field
         self.metadata_fields = metadata_fields
         self.ignore_metadata_fields = ignore_metadata_fields
         self.text_embedding_field = text_embedding_field
         self.distance_strategy = distance_strategy
+
+    @property
+    def embeddings(self) -> Optional[Embeddings]:
+        return self.embedding
 
     def add_texts(
         self,
