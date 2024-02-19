@@ -37,13 +37,8 @@ please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
 
 
-VST = TypeVar("VST", bound=VectorStore)
-
-
 class FirestoreVectorStore(VectorStore):
     """Interface for vector store."""
-
-    _DEFAULT_FIRESTORE_DATABASE = "(default)"
 
     def __init__(
         self,
@@ -164,12 +159,24 @@ class FirestoreVectorStore(VectorStore):
         )
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
-        raise NotImplementedError
+        if not ids or len(ids) == 0:
+            return True
+
+        for batch in more_itertools.chunked(ids, WRITE_BATCH_SIZE):
+            db_batch = self.client.batch()
+            for doc_id in batch:
+                doc_ref = self.source.document(doc_id)
+                db_batch.delete(doc_ref)
+            db_batch.commit()
+
+        return True
 
     async def adelete(
         self, ids: Optional[List[str]] = None, **kwargs: Any
     ) -> Optional[bool]:
-        raise NotImplementedError
+        return await asyncio.get_running_loop().run_in_executor(
+            None, partial(self.delete, **kwargs), ids
+        )
 
     def similarity_search(
         self, query: str, k: int = 4, **kwargs: Any
@@ -266,22 +273,24 @@ class FirestoreVectorStore(VectorStore):
 
     @classmethod
     def from_texts(
-        cls: Type[VST],
+        cls: Type["FirestoreVectorStore"],
         texts: List[str],
         embedding: Embeddings,
         metadatas: Optional[List[dict]] = None,
         **kwargs: Any,
-    ) -> VST:
-        raise NotImplementedError
+    ) -> "FirestoreVectorStore":
+        vs_obj = FirestoreVectorStore(embedding=embedding, **kwargs)
+        vs_obj.add_texts(texts, metadatas)
+        return vs_obj
 
     @classmethod
     async def afrom_texts(
-        cls: Type[VST],
+        cls: Type["FirestoreVectorStore"],
         texts: List[str],
         embedding: Embeddings,
         metadatas: Optional[List[dict]] = None,
         **kwargs: Any,
-    ) -> VST:
+    ) -> "FirestoreVectorStore":
         return await asyncio.get_running_loop().run_in_executor(
             None, partial(cls.from_texts, **kwargs), texts, embedding, metadatas
         )
