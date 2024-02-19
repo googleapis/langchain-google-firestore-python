@@ -14,6 +14,7 @@
 
 from langchain_google_firestore.chat_message_history import FirestoreChatMessageHistory
 from langchain_google_firestore.document_loader import FirestoreLoader, FirestoreSaver
+from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
 from .version import __version__
 
