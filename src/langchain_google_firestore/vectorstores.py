@@ -16,25 +16,31 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Callable, Iterable, List, Optional, Type
 
 import more_itertools
+import numpy as np
 from google.cloud.firestore import (  # type: ignore
     Client,
     CollectionGroup,
     DocumentReference,
+    DocumentSnapshot,
     Query,
 )
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
+from langchain_community.vectorstores.utils import maximal_marginal_relevance
 from langchain_core.documents import Document  # type: ignore
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
+
+from langchain_google_firestore.document_converter import convert_firestore_document
 
 USER_AGENT = "langchain-google-firestore-python:vectorstore"
 IMPORT_ERROR_MSG = """`google-cloud-firestore` package not found,
 please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
+DEFAULT_TOP_K = 4
 
 
 class FirestoreVectorStore(VectorStore):
@@ -178,10 +184,36 @@ class FirestoreVectorStore(VectorStore):
             None, partial(self.delete, **kwargs), ids
         )
 
+    def _similarity_search(
+        self, query: List[float], k: int = DEFAULT_TOP_K, **kwargs: Any
+    ) -> List[DocumentSnapshot]:
+        results = self.source.find_nearest(
+            vector_field=self.text_embedding_field,
+            query_vector=Vector(query),
+            distance_measure=self.distance_strategy,
+            limit=k,
+        )
+        return results.get()
+
     def similarity_search(
-        self, query: str, k: int = 4, **kwargs: Any
+        self, query: str, k: int = DEFAULT_TOP_K, **kwargs: Any
     ) -> List[Document]:
-        raise NotImplementedError
+        """Run similarity search with Firestore.
+
+        Args:
+            query (str): The query text.
+            k (int, optional): The number of documents to return. Defaults to 4.
+
+        Returns:
+            List[Document]: List of documents most similar to the query text.
+        """
+        docs = self._similarity_search(self.embedding.embed_query(query), k)
+        return [
+            convert_firestore_document(
+                docs[i], page_content_fields=[self.content_field]
+            )
+            for i in range(len(docs))
+        ]
 
     async def asimilarity_search(
         self, query: str, k: int = 4, **kwargs: Any
@@ -192,20 +224,7 @@ class FirestoreVectorStore(VectorStore):
         func = partial(self.similarity_search, query, k=k, **kwargs)
         return await asyncio.get_event_loop().run_in_executor(None, func)
 
-    def similarity_search_with_score(
-        self, *args: Any, **kwargs: Any
-    ) -> List[Tuple[Document, float]]:
-        raise NotImplementedError
-
-    async def asimilarity_search_with_score(
-        self, *args: Any, **kwargs: Any
-    ) -> List[Tuple[Document, float]]:
-        # This is a temporary workaround to make the similarity search
-        # asynchronous. The proper solution is to make the similarity search
-        # asynchronous in the vector store implementations.
-        func = partial(self.similarity_search_with_score, *args, **kwargs)
-        return await asyncio.get_event_loop().run_in_executor(None, func)
-
+    # TODO
     def similarity_search_by_vector(
         self, embedding: List[float], k: int = 4, **kwargs: Any
     ) -> List[Document]:
@@ -228,7 +247,22 @@ class FirestoreVectorStore(VectorStore):
         lambda_mult: float = 0.5,
         **kwargs: Any,
     ) -> List[Document]:
-        raise NotImplementedError
+        query_embedding = self.embedding.embed_query(query)
+        doc_results = self._similarity_search(
+            query_embedding,
+            fetch_k,
+        )
+        doc_embeddings = [
+            self._vector_to_list(d.to_dict()[self.text_embedding_field])
+            for d in doc_results
+        ]
+        mmr_doc_indexes = maximal_marginal_relevance(
+            np.array(query_embedding, dtype=np.float32),
+            doc_embeddings,
+            lambda_mult=lambda_mult,
+            k=k,
+        )
+        return [convert_firestore_document(doc_results[i]) for i in mmr_doc_indexes]
 
     async def amax_marginal_relevance_search(
         self,
@@ -251,6 +285,7 @@ class FirestoreVectorStore(VectorStore):
         )
         return await asyncio.get_event_loop().run_in_executor(None, func)
 
+    # TODO
     def max_marginal_relevance_search_by_vector(
         self,
         embedding: List[float],
@@ -261,6 +296,7 @@ class FirestoreVectorStore(VectorStore):
     ) -> List[Document]:
         raise NotImplementedError
 
+    # TODO
     async def amax_marginal_relevance_search_by_vector(
         self,
         embedding: List[float],
@@ -296,4 +332,15 @@ class FirestoreVectorStore(VectorStore):
         )
 
     def _select_relevance_score_fn(self) -> Callable[[float], float]:
-        raise NotImplementedError
+        if self.distance_strategy == DistanceMeasure.COSINE:
+            return FirestoreVectorStore._cosine_relevance_score_fn
+        if self.distance_strategy == DistanceMeasure.EUCLIDEAN:
+            return FirestoreVectorStore._euclidean_relevance_score_fn
+
+        raise ValueError(
+            "Relevance score is not supported "
+            f"for `{self.distance_strategy}` distance."
+        )
+
+    def _vector_to_list(self, vector: Vector) -> List[float]:
+        return vector.to_map_value()["value"]

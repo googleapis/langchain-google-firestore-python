@@ -15,14 +15,14 @@
 from __future__ import annotations
 
 import json
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any, List
 
 from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
+from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_core.documents import Document
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
+    from google.cloud.firestore import Client, DocumentSnapshot
 
 
 FIRESTORE_TYPE = "firestore_type"
@@ -60,6 +60,11 @@ def convert_firestore_document(
     if len(page_content) == 1:
         page_content = str(page_content.popitem()[1])  # type: ignore
     else:
+        # Remove any vector fields from the page content
+        for k in list(page_content.keys()):
+            if isinstance(page_content[k], Vector):
+                del page_content[k]
+
         page_content = json.dumps(page_content)  # type: ignore
 
     return Document(page_content=page_content, metadata=metadata)  # type: ignore
