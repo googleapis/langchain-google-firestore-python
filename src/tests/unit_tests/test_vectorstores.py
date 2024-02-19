@@ -29,8 +29,6 @@ def test_firestore_vectorstore_initialization():
 
     # Mock Embeddings class and its attributes
     mocked_embeddings = Mock()
-    mocked_embeddings.model = "models/embedding-001"
-    mocked_embeddings.google_api_key = "test_api_key"
 
     # Create FirestoreVectorStore instance
     firestore_store = FirestoreVectorStore("my_collection", mocked_embeddings)
