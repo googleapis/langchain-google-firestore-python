@@ -21,7 +21,9 @@ from google.cloud import firestore  # type: ignore
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, messages_from_dict
 
-USER_AGENT = "langchain-google-firestore-python:chat_history"
+from .version import __version__
+
+USER_AGENT = "langchain-google-firestore-python:chat_history" + __version__
 DEFAULT_COLLECTION = "ChatHistory"
 
 if TYPE_CHECKING:
