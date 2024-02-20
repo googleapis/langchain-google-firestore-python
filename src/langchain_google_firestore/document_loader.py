@@ -29,9 +29,10 @@ from .document_converter import (
     convert_firestore_document,
     convert_langchain_document,
 )
+from .version import __version__
 
-USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader"
-USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver"
+USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader" + __version__
+USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver" + __version__
 WRITE_BATCH_SIZE = 500
 
 
@@ -85,7 +86,9 @@ class FirestoreLoader(BaseLoader):
 
             for document_snapshot in query.stream():
                 yield convert_firestore_document(
-                    document_snapshot, self.page_content_fields, self.metadata_fields
+                    document_snapshot,
+                    self.page_content_fields,
+                    self.metadata_fields,
                 )
 
 
@@ -147,12 +150,16 @@ class FirestoreSaver:
                     )
 
                 db_batch.set(
-                    reference=doc_ref, document_data=document_dict["data"], merge=merge
+                    reference=doc_ref,
+                    document_data=document_dict["data"],
+                    merge=merge,
                 )
             db_batch.commit()
 
     def delete_documents(
-        self, documents: List[Document], document_ids: Optional[List[str]] = None
+        self,
+        documents: List[Document],
+        document_ids: Optional[List[str]] = None,
     ) -> None:
         """Delete documents from the Firestore database.
         Args:
