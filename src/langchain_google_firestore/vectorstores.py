@@ -405,6 +405,38 @@ class FirestoreVectorStore(VectorStore):
         await vs_obj.aadd_texts(texts, metadatas)
         return vs_obj
 
+    @classmethod
+    def from_documents(
+        cls: Type["FirestoreVectorStore"],
+        documents: List[Document],
+        embedding: Embeddings,
+        **kwargs: Any,
+    ) -> "FirestoreVectorStore":
+        _check_client(kwargs.get("client"))
+
+        texts = [doc.page_content for doc in documents]
+        metadatas = [doc.metadata for doc in documents]
+
+        return FirestoreVectorStore.from_texts(
+            texts, embedding, metadatas=metadatas, **kwargs
+        )
+
+    @classmethod
+    async def afrom_documents(
+        cls: Type["FirestoreVectorStore"],
+        documents: List[Document],
+        embedding: Embeddings,
+        **kwargs: Any,
+    ) -> "FirestoreVectorStore":
+        _check_async_client(kwargs.get("client"))
+
+        texts = [doc.page_content for doc in documents]
+        metadatas = [doc.metadata for doc in documents]
+
+        return await FirestoreVectorStore.afrom_texts(
+            texts, embedding, metadatas=metadatas, **kwargs
+        )
+
     def _select_relevance_score_fn(self) -> Callable[[float], float]:
         if self.distance_strategy == DistanceMeasure.COSINE:
             return FirestoreVectorStore._cosine_relevance_score_fn
