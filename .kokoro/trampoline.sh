@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,7 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-docker:
-  image: gcr.io/cloud-devrel-public-resources/owlbot-python:latest
-  digest: sha256:230f7fe8a0d2ed81a519cfc15c6bb11c5b46b9fb449b8b1219b3771bcb520ad2
-# created: 2023-12-09T15:16:25.430769578Z
+
+set -eo pipefail
+
+# Always run the cleanup script, regardless of the success of bouncing into
+# the container.
+function cleanup() {
+    chmod +x ${KOKORO_GFILE_DIR}/trampoline_cleanup.sh
+    ${KOKORO_GFILE_DIR}/trampoline_cleanup.sh
+    echo "cleanup";
+}
+trap cleanup EXIT
+
+$(dirname $0)/populate-secrets.sh # Secret Manager secrets.
+python3 "${KOKORO_GFILE_DIR}/trampoline_v1.py"
