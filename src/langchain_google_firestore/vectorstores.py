@@ -16,13 +16,12 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Any, Callable, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Iterable, List, Optional, Type
 
 import more_itertools
 import numpy as np
 from google.cloud.firestore import (  # type: ignore
     Client,
-    AsyncClient,
     CollectionGroup,
     DocumentReference,
     DocumentSnapshot,
@@ -44,26 +43,6 @@ WRITE_BATCH_SIZE = 500
 DEFAULT_TOP_K = 4
 
 
-def _check_async_client(client: Union[Client, AsyncClient]) -> None:
-    if not isinstance(client, AsyncClient):
-        raise ValueError(
-            """The client must be an instance of `google.cloud.firestore.AsyncClient`. 
-            Please re-initialize the FirestoreVectorStore with an async client."""
-        )
-
-    return None
-
-
-def _check_client(client: Union[Client, AsyncClient]) -> None:
-    if not isinstance(client, Client):
-        raise ValueError(
-            """The client must be an instance of `google.cloud.firestore.Client`. 
-            Please re-initialize the FirestoreVectorStore with a non-async client."""
-        )
-
-    return None
-
-
 class FirestoreVectorStore(VectorStore):
     """Interface for vector store."""
 
@@ -71,7 +50,7 @@ class FirestoreVectorStore(VectorStore):
         self,
         source: Query | CollectionGroup | DocumentReference | str,
         embedding: Embeddings,
-        client: Optional[Union[Client, AsyncClient]] = None,
+        client: Optional[Client] = None,
         content_field="content",
         metadata_fields: Optional[List[str]] = None,
         ignore_metadata_fields: Optional[List[str]] = None,
@@ -155,8 +134,6 @@ class FirestoreVectorStore(VectorStore):
                 "The `collection` path must be provided when using CollectionGroup."
             )
 
-        _check_client(self.client)
-
         ids = []
         db_batch = self.client.batch()
 
@@ -188,8 +165,6 @@ class FirestoreVectorStore(VectorStore):
                 "The `collection` path must be provided when using CollectionGroup."
             )
 
-        _check_async_client(self.client)
-
         ids = []
         db_batch = self.client.batch()
 
@@ -210,7 +185,6 @@ class FirestoreVectorStore(VectorStore):
         return ids
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
-        _check_client(self.client)
 
         if not ids or len(ids) == 0:
             return True
@@ -227,7 +201,6 @@ class FirestoreVectorStore(VectorStore):
     async def adelete(
         self, ids: Optional[List[str]] = None, **kwargs: Any
     ) -> Optional[bool]:
-        _check_async_client(self.client)
 
         if not ids or len(ids) == 0:
             return True
@@ -385,8 +358,6 @@ class FirestoreVectorStore(VectorStore):
         metadatas: Optional[List[dict]] = None,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
-        _check_client(kwargs.get("client"))
-
         vs_obj = FirestoreVectorStore(embedding=embedding, **kwargs)
         vs_obj.add_texts(texts, metadatas)
         return vs_obj
@@ -399,8 +370,6 @@ class FirestoreVectorStore(VectorStore):
         metadatas: Optional[List[dict]] = None,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
-        _check_async_client(kwargs.get("client"))
-
         vs_obj = FirestoreVectorStore(embedding=embedding, **kwargs)
         await vs_obj.aadd_texts(texts, metadatas)
         return vs_obj
@@ -412,7 +381,6 @@ class FirestoreVectorStore(VectorStore):
         embedding: Embeddings,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
-        _check_client(kwargs.get("client"))
 
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
@@ -428,7 +396,6 @@ class FirestoreVectorStore(VectorStore):
         embedding: Embeddings,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
-        _check_async_client(kwargs.get("client"))
 
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
