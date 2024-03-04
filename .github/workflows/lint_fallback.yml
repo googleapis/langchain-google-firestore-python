@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-steps:
-  - id: Install dependencies
-    name: python:3.8
-    entrypoint: pip
-    args: ["install", "--user", "-r", "requirements.txt"]
+name: Lint
+on:
+  pull_request:
+    paths:
+      - "*.md"
 
-  - id: Install module (and test requirements)
-    name: python:3.8
-    entrypoint: pip
-    args: ["install", ".[test]", "--user"]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
 
-  - id: Run integration tests
-    name: python:3.8
-    entrypoint: python
-    args: ["-m", "pytest"]
+    steps:
+      - run: echo "No tests required."
