@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import json
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any, List
 
 from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
