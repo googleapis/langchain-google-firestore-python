@@ -31,13 +31,18 @@ from .document_converter import (
 )
 from .version import __version__
 
-USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader" + __version__
-USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver" + __version__
+USER_AGENT_LOADER = "langchain-google-firestore-python:document_loader/" + __version__
+USER_AGENT_SAVER = "langchain-google-firestore-python:document_saver/" + __version__
 WRITE_BATCH_SIZE = 500
 
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
+    from google.cloud.firestore import (
+        Client,
+        CollectionGroup,
+        DocumentReference,
+        Query,
+    )
 
 
 class FirestoreLoader(BaseLoader):
