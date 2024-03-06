@@ -23,7 +23,7 @@ from langchain_core.messages import BaseMessage, messages_from_dict
 
 from .version import __version__
 
-USER_AGENT = "langchain-google-firestore-python:chat_history" + __version__
+USER_AGENT = "langchain-google-firestore-python:chat_history/" + __version__
 DEFAULT_COLLECTION = "ChatHistory"
 
 if TYPE_CHECKING:
