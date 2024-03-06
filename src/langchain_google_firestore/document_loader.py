@@ -37,12 +37,7 @@ WRITE_BATCH_SIZE = 500
 
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import (
-        Client,
-        CollectionGroup,
-        DocumentReference,
-        Query,
-    )
+    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
 
 
 class FirestoreLoader(BaseLoader):
