@@ -43,6 +43,11 @@ def convert_firestore_document(
         }
     }
 
+    # Check for vector fields and remove them
+    for k in list(data_doc.keys()):
+        if isinstance(data_doc[k], Vector):
+            del data_doc[k]
+
     set_page_fields = set(
         page_content_fields or (data_doc.keys() - set(metadata_fields))
     )
@@ -60,11 +65,6 @@ def convert_firestore_document(
     if len(page_content) == 1:
         page_content = str(page_content.popitem()[1])  # type: ignore
     else:
-        # Remove any vector fields from the page content
-        for k in list(page_content.keys()):
-            if isinstance(page_content[k], Vector):
-                del page_content[k]
-
         page_content = json.dumps(page_content)  # type: ignore
 
     return Document(page_content=page_content, metadata=metadata)  # type: ignore
