@@ -22,10 +22,8 @@ import more_itertools
 import numpy as np
 from google.cloud.firestore import (  # type: ignore
     Client,
-    CollectionGroup,
-    DocumentReference,
     DocumentSnapshot,
-    Query,
+    CollectionReference,
 )
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
@@ -48,13 +46,12 @@ class FirestoreVectorStore(VectorStore):
 
     def __init__(
         self,
-        source: Query | CollectionGroup | DocumentReference | str,
+        collection: CollectionReference | str,
         embedding: Embeddings,
         client: Optional[Client] = None,
-        content_field="content",
-        metadata_fields: Optional[List[str]] = None,
-        ignore_metadata_fields: Optional[List[str]] = None,
-        text_embedding_field: Optional[str] = "embeddings",
+        content_field: str = "content",
+        metadata_field: str = "metadata",
+        embedding_field: str = "embeddings",
         distance_strategy: Optional[DistanceMeasure] = DistanceMeasure.COSINE,
     ) -> None:
         """Constructor for FirestoreVectorStore.
@@ -63,17 +60,15 @@ class FirestoreVectorStore(VectorStore):
             source (Query | CollectionGroup | DocumentReference | str): The source
                 collection or document reference to store the data.
             embeddings (Embeddings): The embeddings to use for the vector store.
-            client (Optional[Client], optional): The Firestore client to use. If
+            client (Client, optional): The Firestore client to use. If
                 not provided, a new client will be created. Defaults to None.
             content_field (str, optional): The field name to store the content
-                data. Defaults to "content".
-            metadata_fields (Optional[List[str]], optional): The list of metadata
-                fields to store. Defaults to None.
-            ignore_metadata_fields (Optional[List[str]], optional): The list of
-                metadata fields to ignore. Defaults to None.
-            text_embedding_field (Optional[str], optional): The field name to
-                store the text embeddings. Defaults to "embeddings".
-            distance_strategy (Optional[DistanceStrategy], optional): The distance
+                data.
+            metadata_field (str, optional): The field name to store the
+                metadata.
+            embedding_field (str, optional): The field name to
+                store the text embeddings.
+            distance_strategy (DistanceStrategy, optional): The distance
                 strategy to use for calculating distances between vectors.
                 Defaults to DistanceStrategy.COSINE.
 
@@ -87,7 +82,7 @@ class FirestoreVectorStore(VectorStore):
             from langchain.embeddings import GooglePalmEmbeddings
 
             embeddings = GooglePalmEmbeddings()
-            firestore_vecstore = Firestore(source="my_collection", embeddings=embeddings)
+            firestore_vecstore = Firestore(collection="my_collection", embeddings=embeddings)
         """
         try:
             from google.cloud import firestore
@@ -104,18 +99,15 @@ class FirestoreVectorStore(VectorStore):
         elif USER_AGENT not in client_agent:
             self.client._client_info.user_agent = " ".join([client_agent, USER_AGENT])
 
-        if isinstance(source, str):
-            self.source = self.client.collection(source)
-        elif isinstance(source, DocumentReference):
-            self.source = source.parent
+        if isinstance(collection, str):
+            self.collection = self.client.collection(collection)
         else:
-            self.source = source
+            self.collection = collection
 
         self.embedding = embedding
         self.content_field = content_field
-        self.metadata_fields = metadata_fields
-        self.ignore_metadata_fields = ignore_metadata_fields
-        self.text_embedding_field = text_embedding_field
+        self.metadata_field = metadata_field
+        self.embedding_field = embedding_field
         self.distance_strategy = distance_strategy
 
     @property
@@ -126,25 +118,19 @@ class FirestoreVectorStore(VectorStore):
         self,
         texts: Iterable[str],
         metadatas: Optional[List[dict]] = None,
-        collection: Optional[str] = None,
         **kwargs: Any,
     ) -> List[str]:
-        if isinstance(self.source, CollectionGroup) and not collection:
-            raise ValueError(
-                "The `collection` path must be provided when using CollectionGroup."
-            )
-
         ids = []
         db_batch = self.client.batch()
 
         for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
             texts_embs = self.embedding.embed_documents(batch)
             for i, text in enumerate(batch):
-                doc = self.source.document()
+                doc = self.collection.document()
                 ids.append(doc.id)
                 data = {
                     self.content_field: text,
-                    self.text_embedding_field: Vector(texts_embs[i]),
+                    self.embedding_field: Vector(texts_embs[i]),
                 }
                 if metadatas:
                     data.update(metadatas[i])
@@ -157,25 +143,19 @@ class FirestoreVectorStore(VectorStore):
         self,
         texts: Iterable[str],
         metadatas: Optional[List[dict]] = None,
-        collection: Optional[str] = None,
         **kwargs: Any,
     ) -> List[str]:
-        if isinstance(self.source, CollectionGroup) and not collection:
-            raise ValueError(
-                "The `collection` path must be provided when using CollectionGroup."
-            )
-
         ids = []
         db_batch = self.client.batch()
 
         for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
             texts_embs = self.embedding.embed_documents(batch)
             for i, text in enumerate(batch):
-                doc = self.source.document()
+                doc = self.collection.document()
                 ids.append(doc.id)
                 data = {
                     self.content_field: text,
-                    self.text_embedding_field: Vector(texts_embs[i]),
+                    self.embedding_field: Vector(texts_embs[i]),
                 }
                 if metadatas:
                     data.update(metadatas[i])
@@ -192,7 +172,7 @@ class FirestoreVectorStore(VectorStore):
         for batch in more_itertools.chunked(ids, WRITE_BATCH_SIZE):
             db_batch = self.client.batch()
             for doc_id in batch:
-                doc_ref = self.source.document(doc_id)
+                doc_ref = self.collection.document(doc_id)
                 db_batch.delete(doc_ref)
             db_batch.commit()
 
@@ -208,7 +188,7 @@ class FirestoreVectorStore(VectorStore):
         for batch in more_itertools.chunked(ids, WRITE_BATCH_SIZE):
             db_batch = self.client.batch()
             for doc_id in batch:
-                doc_ref = self.source.document(doc_id)
+                doc_ref = self.collection.document(doc_id)
                 db_batch.delete(doc_ref)
             await db_batch.commit()
 
@@ -217,8 +197,8 @@ class FirestoreVectorStore(VectorStore):
     def _similarity_search(
         self, query: List[float], k: int = DEFAULT_TOP_K, **kwargs: Any
     ) -> List[DocumentSnapshot]:
-        results = self.source.find_nearest(
-            vector_field=self.text_embedding_field,
+        results = self.collection.find_nearest(
+            vector_field=self.embedding_field,
             query_vector=Vector(query),
             distance_measure=self.distance_strategy,
             limit=k,
@@ -319,8 +299,7 @@ class FirestoreVectorStore(VectorStore):
     ) -> List[Document]:
         doc_results = self._similarity_search(embedding, fetch_k)
         doc_embeddings = [
-            self._vector_to_list(d.to_dict()[self.text_embedding_field])
-            for d in doc_results
+            self._vector_to_list(d.to_dict()[self.embedding_field]) for d in doc_results
         ]
         mmr_doc_indexes = maximal_marginal_relevance(
             np.array(embedding, dtype=np.float32),
