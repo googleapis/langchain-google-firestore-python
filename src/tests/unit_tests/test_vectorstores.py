@@ -34,5 +34,5 @@ def test_firestore_vectorstore_initialization():
     firestore_store = FirestoreVectorStore("my_collection", mocked_embeddings)
 
     # Assertions to verify attribute values and error handling
-    assert isinstance(firestore_store.source, CollectionReference)
+    assert isinstance(firestore_store.collection, CollectionReference)
     assert firestore_store.embeddings == mocked_embeddings
