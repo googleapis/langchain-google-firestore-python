@@ -34,7 +34,9 @@ from langchain_core.vectorstores import VectorStore
 
 from langchain_google_firestore.document_converter import convert_firestore_document
 
-USER_AGENT = "langchain-google-firestore-python:vectorstore"
+from .version import __version__
+
+USER_AGENT = "langchain-google-firestore-python:vectorstore" + __version__
 IMPORT_ERROR_MSG = """`google-cloud-firestore` package not found,
 please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
