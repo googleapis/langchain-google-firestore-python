@@ -59,18 +59,18 @@ class FirestoreVectorStore(VectorStore):
         """Constructor for FirestoreVectorStore.
 
         Args:
-            source (Query | CollectionGroup | DocumentReference | str): The source
-                collection or document reference to store the data.
+            source (CollectionReference | str): The source collection or document
+                reference to store the data.
             embeddings (Embeddings): The embeddings to use for the vector store.
             client (Client, optional): The Firestore client to use. If
                 not provided, a new client will be created. Defaults to None.
-            content_field (str, optional): The field name to store the content
+            content_field (Optional[str]): The field name to store the content
                 data.
-            metadata_field (str, optional): The field name to store the
+            metadata_field (Optional[str]): The field name to store the
                 metadata.
-            embedding_field (str, optional): The field name to
+            embedding_field (Optional[str]): The field name to
                 store the text embeddings.
-            distance_strategy (DistanceStrategy, optional): The distance
+            distance_strategy (Optional[DistanceStrategy]): The distance
                 strategy to use for calculating distances between vectors.
                 Defaults to DistanceStrategy.COSINE.
 
