@@ -22,8 +22,8 @@ import more_itertools
 import numpy as np
 from google.cloud.firestore import (  # type: ignore
     Client,
-    DocumentSnapshot,
     CollectionReference,
+    DocumentSnapshot,
 )
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
@@ -167,7 +167,6 @@ class FirestoreVectorStore(VectorStore):
         return ids
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
-
         if not ids or len(ids) == 0:
             return True
 
@@ -183,7 +182,6 @@ class FirestoreVectorStore(VectorStore):
     async def adelete(
         self, ids: Optional[List[str]] = None, **kwargs: Any
     ) -> Optional[bool]:
-
         if not ids or len(ids) == 0:
             return True
 
@@ -362,7 +360,6 @@ class FirestoreVectorStore(VectorStore):
         embedding: Embeddings,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
-
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
 
@@ -377,7 +374,6 @@ class FirestoreVectorStore(VectorStore):
         embedding: Embeddings,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
-
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
 
