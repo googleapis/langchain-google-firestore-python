@@ -23,6 +23,7 @@ from google.cloud.firestore import (  # type: ignore
     CollectionReference,
     DocumentSnapshot,
 )
+from google.cloud.firestore_v1.base_query import BaseFilter
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
@@ -188,27 +189,44 @@ class FirestoreVectorStore(VectorStore):
     def _similarity_search(
         self, query: List[float], k: int = DEFAULT_TOP_K, **kwargs: Any
     ) -> List[DocumentSnapshot]:
-        results = self.collection.find_nearest(
+        filters = kwargs.get("filters")
+
+        wfilters = None
+
+        if filters is not None:
+            wfilters = self.collection.where(filter=filters)
+
+        results = (wfilters or self.collection).find_nearest(
             vector_field=self.embedding_field,
             query_vector=Vector(query),
             distance_measure=self.distance_strategy,
             limit=k,
         )
+
         return results.get()
 
     def similarity_search(
-        self, query: str, k: int = DEFAULT_TOP_K, **kwargs: Any
+        self,
+        query: str,
+        k: int = DEFAULT_TOP_K,
+        filters: Optional[BaseFilter] = None,
+        **kwargs: Any,
     ) -> List[Document]:
         """Run similarity search with Firestore.
 
         Args:
             query (str): The query text.
-            k (int, optional): The number of documents to return. Defaults to 4.
+            k (int): The number of documents to return. Defaults to 4.
+            filters (Optional[BaseFilter]): The pre-filter to apply to the
+                query. Defaults to None.
 
         Returns:
             List[Document]: List of documents most similar to the query text.
         """
-        docs = self._similarity_search(self.embedding.embed_query(query), k)
+
+        docs = self._similarity_search(
+            self.embedding.embed_query(query), k, filters=filters
+        )
         return [
             convert_firestore_document(
                 docs[i], page_content_fields=[self.content_field]
@@ -217,11 +235,22 @@ class FirestoreVectorStore(VectorStore):
         ]
 
     def similarity_search_by_vector(
-        self, embedding: List[float], k: int = 4, **kwargs: Any
+        self,
+        embedding: List[float],
+        k: int = 4,
+        filters: Optional[BaseFilter] = None,
+        **kwargs: Any,
     ) -> List[Document]:
-        """Run similarity search with Firestore using a vector."""
+        """Run similarity search with Firestore using a vector.
 
-        docs = self._similarity_search(embedding, k)
+        Args:
+            embedding (List[float]): The query vector.
+            k (int): The number of documents to return. Defaults to 4.
+            filters (Optional[BaseFilter]): The pre-filter to apply to the
+                query. Defaults to None.
+        """
+
+        docs = self._similarity_search(embedding, k, filters=filters)
         return [
             convert_firestore_document(
                 docs[i], page_content_fields=[self.content_field]
@@ -235,11 +264,16 @@ class FirestoreVectorStore(VectorStore):
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
+        filters: Optional[BaseFilter] = None,
         **kwargs: Any,
     ) -> List[Document]:
         query_embedding = self.embedding.embed_query(query)
         return self.max_marginal_relevance_search_by_vector(
-            query_embedding, k=k, fetch_k=fetch_k, lambda_mult=lambda_mult
+            query_embedding,
+            k=k,
+            fetch_k=fetch_k,
+            lambda_mult=lambda_mult,
+            filters=filters,
         )
 
     def max_marginal_relevance_search_by_vector(
@@ -248,9 +282,10 @@ class FirestoreVectorStore(VectorStore):
         k: int = 4,
         fetch_k: int = 20,
         lambda_mult: float = 0.5,
+        filters: Optional[BaseFilter] = None,
         **kwargs: Any,
     ) -> List[Document]:
-        doc_results = self._similarity_search(embedding, fetch_k)
+        doc_results = self._similarity_search(embedding, fetch_k, filters=filters)
         doc_embeddings = [
             self._vector_to_list(d.to_dict()[self.embedding_field]) for d in doc_results
         ]
