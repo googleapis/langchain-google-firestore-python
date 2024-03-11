@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-import asyncio
-from functools import partial
 from typing import Any, Callable, Iterable, List, Optional, Type
 
 import more_itertools
@@ -53,7 +51,7 @@ class FirestoreVectorStore(VectorStore):
         client: Optional[Client] = None,
         content_field: str = "content",
         metadata_field: str = "metadata",
-        embedding_field: str = "embeddings",
+        embedding_field: str = "embedding",
         distance_strategy: Optional[DistanceMeasure] = DistanceMeasure.COSINE,
     ) -> None:
         """Constructor for FirestoreVectorStore.
@@ -61,7 +59,7 @@ class FirestoreVectorStore(VectorStore):
         Args:
             source (CollectionReference | str): The source collection or document
                 reference to store the data.
-            embeddings (Embeddings): The embeddings to use for the vector store.
+            embedding (Embeddings): The embeddings to use for the vector store.
             client (Client, optional): The Firestore client to use. If
                 not provided, a new client will be created. Defaults to None.
             content_field (Optional[str]): The field name to store the content
@@ -120,51 +118,44 @@ class FirestoreVectorStore(VectorStore):
         self,
         texts: Iterable[str],
         metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> List[str]:
-        ids = []
+        """Add or update texts in the vector store. If the `ids` are provided, and
+        the Firestore document with the same id exists, it will be updated.
+        Otherwise, a new Firestore document will be created.
+
+        Args:
+            texts (Iterable[str]): The texts to add to the vector store.
+            metadatas (Optional[List[dict]], optional): The metadata to add to the
+                vector store. Defaults to None.
+            ids (Optional[List[str]], optional): The document ids to add to the
+                vector store. Defaults to None.
+
+        Returns:
+            List[str]: The list of document ids added to the vector store.
+        """
+
+        _ids = ids or []
         db_batch = self.client.batch()
 
         for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
             texts_embs = self.embedding.embed_documents(batch)
             for i, text in enumerate(batch):
-                doc = self.collection.document()
-                ids.append(doc.id)
+                doc_id = _ids[i] if i < len(_ids) else None
+                doc = self.collection.document(doc_id)
+                if doc_id is None:
+                    _ids.append(doc.id)
                 data = {
                     self.content_field: text,
                     self.embedding_field: Vector(texts_embs[i]),
                 }
                 if metadatas:
                     data.update(metadatas[i])
-                db_batch.set(doc, data)
+                db_batch.set(doc, data, merge=True)
             db_batch.commit()
 
-        return ids
-
-    async def aadd_texts(
-        self,
-        texts: Iterable[str],
-        metadatas: Optional[List[dict]] = None,
-        **kwargs: Any,
-    ) -> List[str]:
-        ids = []
-        db_batch = self.client.batch()
-
-        for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
-            texts_embs = self.embedding.embed_documents(batch)
-            for i, text in enumerate(batch):
-                doc = self.collection.document()
-                ids.append(doc.id)
-                data = {
-                    self.content_field: text,
-                    self.embedding_field: Vector(texts_embs[i]),
-                }
-                if metadatas:
-                    data.update(metadatas[i])
-                db_batch.set(doc, data)
-            await db_batch.commit()
-
-        return ids
+        return _ids
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
         if not ids or len(ids) == 0:
@@ -225,15 +216,6 @@ class FirestoreVectorStore(VectorStore):
             for i in range(len(docs))
         ]
 
-    async def asimilarity_search(
-        self, query: str, k: int = 4, **kwargs: Any
-    ) -> List[Document]:
-        # This is a temporary workaround to make the similarity search
-        # asynchronous. The proper solution is to make the similarity search
-        # asynchronous in the vector store implementations.
-        func = partial(self.similarity_search, query, k=k, **kwargs)
-        return await asyncio.get_event_loop().run_in_executor(None, func)
-
     def similarity_search_by_vector(
         self, embedding: List[float], k: int = 4, **kwargs: Any
     ) -> List[Document]:
@@ -247,15 +229,6 @@ class FirestoreVectorStore(VectorStore):
             for i in range(len(docs))
         ]
 
-    async def asimilarity_search_by_vector(
-        self, embedding: List[float], k: int = 4, **kwargs: Any
-    ) -> List[Document]:
-        # This is a temporary workaround to make the similarity search
-        # asynchronous. The proper solution is to make the similarity search
-        # asynchronous in the vector store implementations.
-        func = partial(self.similarity_search_by_vector, embedding, k=k, **kwargs)
-        return await asyncio.get_event_loop().run_in_executor(None, func)
-
     def max_marginal_relevance_search(
         self,
         query: str,
@@ -268,26 +241,6 @@ class FirestoreVectorStore(VectorStore):
         return self.max_marginal_relevance_search_by_vector(
             query_embedding, k=k, fetch_k=fetch_k, lambda_mult=lambda_mult
         )
-
-    async def amax_marginal_relevance_search(
-        self,
-        query: str,
-        k: int = 4,
-        fetch_k: int = 20,
-        lambda_mult: float = 0.5,
-        **kwargs: Any,
-    ) -> List[Document]:
-        # This is a temporary workaround to make the similarity search
-        # asynchronous. The proper solution is to make the similarity search
-        # asynchronous in the vector store implementations.
-        func = partial(
-            self.max_marginal_relevance_search,
-            query,
-            k=k,
-            fetch_k=fetch_k,
-            lambda_mult=lambda_mult,
-        )
-        return await asyncio.get_event_loop().run_in_executor(None, func)
 
     def max_marginal_relevance_search_by_vector(
         self,
@@ -308,26 +261,6 @@ class FirestoreVectorStore(VectorStore):
             k=k,
         )
         return [convert_firestore_document(doc_results[i]) for i in mmr_doc_indexes]
-
-    async def amax_marginal_relevance_search_by_vector(
-        self,
-        embedding: List[float],
-        k: int = 4,
-        fetch_k: int = 20,
-        lambda_mult: float = 0.5,
-        **kwargs: Any,
-    ) -> List[Document]:
-        # This is a temporary workaround to make the similarity search
-        # asynchronous. The proper solution is to make the similarity search
-        # asynchronous in the vector store implementations.
-        func = partial(
-            self.max_marginal_relevance_search_by_vector,
-            embedding,
-            k=k,
-            fetch_k=fetch_k,
-            lambda_mult=lambda_mult,
-        )
-        return await asyncio.get_event_loop().run_in_executor(None, func)
 
     @classmethod
     def from_texts(
