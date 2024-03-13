@@ -14,26 +14,24 @@
 
 from unittest.mock import Mock
 
-from google.api_core.client_options import ClientOptions
+import pytest
 from google.cloud import firestore
 from google.cloud.firestore import CollectionReference  # type: ignore
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-import pytest
+from langchain_community.embeddings import FakeEmbeddings
 
 from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
-
-client = firestore.Client()
 
 TEST_COLLECTION = "test_collection"
 
 
 def get_embeddings():
-    return GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    return FakeEmbeddings(size=100)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_firestore():
+    client = firestore.Client()
     for doc in client.collection(TEST_COLLECTION).stream():
         doc.reference.delete()
 
@@ -104,3 +102,21 @@ def test_firestore_update_vectors():
         elif doc.id == "2":
             assert data["content"] == "test2"
             assert data["metadata"] == {"baz": "qux"}
+
+
+def test_firestore_similarity_search():
+    """
+    An end-to-end test for similarity search in FirestoreVectorStore.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(TEST_COLLECTION, get_embeddings())
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(["test1", "test2"], ids=["1", "2"])
+
+    # Perform similarity search
+    results = firestore_store.similarity_search("test1", k=2)
+
+    # Verify that the search results are as expected
+    assert len(results) == 2
