@@ -138,7 +138,7 @@ class FirestoreVectorStore(VectorStore):
                     self.embedding_field: Vector(texts_embs[i]),
                 }
                 if metadatas:
-                    data.update(metadatas[i])
+                    data.update({self.metadata_field: metadatas[i]})
                 db_batch.set(doc, data, merge=True)
             db_batch.commit()
 
