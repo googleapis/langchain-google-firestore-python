@@ -23,8 +23,8 @@ from google.cloud.firestore import (  # type: ignore
     CollectionReference,
     DocumentSnapshot,
 )
-from google.cloud.firestore_v1.base_query import BaseFilter
-from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
+from google.cloud.firestore_v1.base_query import BaseFilter  # type: ignore
+from google.cloud.firestore_v1.base_vector_query import DistanceMeasure  # type: ignore
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
 from langchain_core.documents import Document  # type: ignore
@@ -59,32 +59,17 @@ class FirestoreVectorStore(VectorStore):
         """Constructor for FirestoreVectorStore.
 
         Args:
-            source (CollectionReference | str): The source collection or document
-                reference to store the data.
-            embedding (Embeddings): The embeddings to use for the vector store.
-            client (Client, optional): The Firestore client to use. If
-                not provided, a new client will be created. Defaults to None.
-            content_field (Optional[str]): The field name to store the content
-                data.
-            metadata_field (Optional[str]): The field name to store the
-                metadata.
-            embedding_field (Optional[str]): The field name to
-                store the text embeddings.
-            distance_strategy (Optional[DistanceStrategy]): The distance
-                strategy to use for calculating distances between vectors.
-                Defaults to DistanceStrategy.COSINE.
+            source: The source collection or document reference to store the data.
+            embedding: The embeddings to use for the vector store.
+            client: The Firestore client to use. If not provided, a new client will be created.
+            content_field: The field name to store the content data.
+            metadata_field: The field name to store the metadata.
+            embedding_field: The field name to store the text embeddings.
+            distance_strategy: The distance strategy to use for calculating distances
+            between vectors. Defaults to DistanceStrategy.COSINE.
 
         Raises:
             ImportError: If the `firestore` package is not found.
-
-        Example:
-            .. code-block:: python
-
-            from langchain_google_firestore.vectorstores import Firestore
-            from langchain.embeddings import GooglePalmEmbeddings
-
-            embeddings = GooglePalmEmbeddings()
-            firestore_vecstore = Firestore(collection="my_collection", embeddings=embeddings)
         """
         try:
             from google.cloud import firestore
@@ -125,15 +110,14 @@ class FirestoreVectorStore(VectorStore):
         **kwargs: Any,
     ) -> List[str]:
         """Add or update texts in the vector store. If the `ids` are provided, and
-        the Firestore document with the same id exists, it will be updated.
+        a Firestore document with the same id exists, it will be updated.
         Otherwise, a new Firestore document will be created.
 
         Args:
-            texts (Iterable[str]): The texts to add to the vector store.
-            metadatas (Optional[List[dict]], optional): The metadata to add to the
-                vector store. Defaults to None.
-            ids (Optional[List[str]], optional): The document ids to add to the
-                vector store. Defaults to None.
+            texts: The texts to add to the vector store.
+            metadatas: The metadata to add to the vector store. Defaults to None.
+            ids: The document ids to use for the new documents. If not provided, new
+            document ids will be generated.
 
         Returns:
             List[str]: The list of document ids added to the vector store.
@@ -161,6 +145,15 @@ class FirestoreVectorStore(VectorStore):
         return _ids
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
+        """Delete documents from the vector store.
+
+        Args:
+            ids: The document ids to delete from the vector store.
+
+        Returns:
+            Optional[bool]: True if the documents are deleted successfully.
+        """
+
         if not ids or len(ids) == 0:
             return True
 
@@ -170,21 +163,6 @@ class FirestoreVectorStore(VectorStore):
                 doc_ref = self.collection.document(doc_id)
                 db_batch.delete(doc_ref)
             db_batch.commit()
-
-        return True
-
-    async def adelete(
-        self, ids: Optional[List[str]] = None, **kwargs: Any
-    ) -> Optional[bool]:
-        if not ids or len(ids) == 0:
-            return True
-
-        for batch in more_itertools.chunked(ids, WRITE_BATCH_SIZE):
-            db_batch = self.client.batch()
-            for doc_id in batch:
-                doc_ref = self.collection.document(doc_id)
-                db_batch.delete(doc_ref)
-            await db_batch.commit()
 
         return True
 
@@ -215,12 +193,13 @@ class FirestoreVectorStore(VectorStore):
         **kwargs: Any,
     ) -> List[Document]:
         """Run similarity search with Firestore.
+        This method will throw if the index is not created, in which case you
+        will be prompted to create the index.
 
         Args:
-            query (str): The query text.
-            k (int): The number of documents to return. Defaults to 4.
-            filters (Optional[BaseFilter]): The pre-filter to apply to the
-                query. Defaults to None.
+            query: The query text.
+            k: The number of documents to return. Defaults to 4.
+            filters: The pre-filter to apply to the query. Defaults to None.
 
         Returns:
             List[Document]: List of documents most similar to the query text.
@@ -244,12 +223,16 @@ class FirestoreVectorStore(VectorStore):
         **kwargs: Any,
     ) -> List[Document]:
         """Run similarity search with Firestore using a vector.
+        This method will throw if the index is not created, in which case you
+        will be prompted to create the index.
 
         Args:
-            embedding (List[float]): The query vector.
-            k (int): The number of documents to return. Defaults to 4.
-            filters (Optional[BaseFilter]): The pre-filter to apply to the
-                query. Defaults to None.
+            embedding: The query vector.
+            k: The number of documents to return. Defaults to 4.
+            filters: The pre-filter to apply to the query. Defaults to None.
+
+        Returns:
+            List[Document]: List of documents most similar to the query vector.
         """
 
         docs = self._similarity_search(embedding, k, filters=filters)
@@ -269,6 +252,20 @@ class FirestoreVectorStore(VectorStore):
         filters: Optional[BaseFilter] = None,
         **kwargs: Any,
     ) -> List[Document]:
+        """Run max marginal relevance search on the results of Firestore nearest
+        neighbor search. This method will throw if the index is not created,
+        in which case you will be prompted to create the index.
+
+        Args:
+            query: The query text.
+            k: The number of documents to return. Defaults to 4.
+            fetch_k: The number of documents to fetch. Defaults to 20.
+            lambda_mult: The lambda multiplier. Defaults to 0.5.
+            filters: The pre-filter to apply to the query. Defaults to None.
+
+        Returns:
+            List[Document]: List of documents most similar to the query text.
+        """
         query_embedding = self.embedding.embed_query(query)
         return self.max_marginal_relevance_search_by_vector(
             query_embedding,
@@ -287,6 +284,20 @@ class FirestoreVectorStore(VectorStore):
         filters: Optional[BaseFilter] = None,
         **kwargs: Any,
     ) -> List[Document]:
+        """Run max marginal relevance search on the results of Firestore nearest
+        neighbor search using a vector. This method will throw if the index is
+        not created, in which case you will be prompted to create the index.
+
+        Args:
+            embedding: The query vector.
+            k: The number of documents to return. Defaults to 4.
+            fetch_k: The number of documents to fetch. Defaults to 20.
+            lambda_mult: The lambda multiplier. Defaults to 0.5.
+            filters: The pre-filter to apply to the query. Defaults to None.
+
+        Returns:
+            List[Document]: List of documents most similar to the query vector.
+        """
         doc_results = self._similarity_search(embedding, fetch_k, filters=filters)
         doc_embeddings = [
             self._vector_to_list(d.to_dict()[self.embedding_field]) for d in doc_results
@@ -307,6 +318,16 @@ class FirestoreVectorStore(VectorStore):
         metadatas: Optional[List[dict]] = None,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
+        """Create a FirestoreVectorStore instance and add texts to it.
+
+        Args:
+            texts: The texts to add to the vector store.
+            embedding: The embeddings to use to generate the vectors from texts.
+            metadatas: The metadata to add to the vector store. Defaults to None.
+
+        Returns:
+            FirestoreVectorStore: The FirestoreVectorStore instance.
+        """
         vs_obj = FirestoreVectorStore(embedding=embedding, **kwargs)
         vs_obj.add_texts(texts, metadatas)
         return vs_obj
@@ -330,6 +351,12 @@ class FirestoreVectorStore(VectorStore):
         embedding: Embeddings,
         **kwargs: Any,
     ) -> "FirestoreVectorStore":
+        """Create a FirestoreVectorStore instance and add documents to it.
+
+        Args:
+            documents: The documents to add to the vector store.
+            embedding: The embeddings to use to generate the vectors from documents.
+        """
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
 
