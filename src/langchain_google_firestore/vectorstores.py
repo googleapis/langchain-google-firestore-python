@@ -54,6 +54,7 @@ class FirestoreVectorStore(VectorStore):
         metadata_field: str = "metadata",
         embedding_field: str = "embedding",
         distance_strategy: Optional[DistanceMeasure] = DistanceMeasure.COSINE,
+        filters: Optional[BaseFilter] = None,
     ) -> None:
         """Constructor for FirestoreVectorStore.
 
@@ -110,6 +111,7 @@ class FirestoreVectorStore(VectorStore):
         self.metadata_field = metadata_field
         self.embedding_field = embedding_field
         self.distance_strategy = distance_strategy
+        self.filters = filters
 
     @property
     def embeddings(self) -> Optional[Embeddings]:
@@ -189,7 +191,7 @@ class FirestoreVectorStore(VectorStore):
     def _similarity_search(
         self, query: List[float], k: int = DEFAULT_TOP_K, **kwargs: Any
     ) -> List[DocumentSnapshot]:
-        filters = kwargs.get("filters")
+        filters = kwargs.get("filters") or self.filters
 
         wfilters = None
 
