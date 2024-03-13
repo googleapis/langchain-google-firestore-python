@@ -27,7 +27,7 @@ from google.cloud.firestore_v1.base_query import BaseFilter  # type: ignore
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure  # type: ignore
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
-from langchain_core.documents import Document  # type: ignore
+from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
@@ -72,7 +72,7 @@ class FirestoreVectorStore(VectorStore):
             ImportError: If the `firestore` package is not found.
         """
         try:
-            from google.cloud import firestore
+            from google.cloud import firestore  # type: ignore
         except ModuleNotFoundError as exc:
             raise ImportError(IMPORT_ERROR_MSG) from exc
 
