@@ -15,12 +15,11 @@
 from unittest.mock import Mock
 
 import pytest
-from google.cloud import firestore
+from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import CollectionReference  # type: ignore
 from langchain_community.embeddings import FakeEmbeddings
 
 from langchain_google_firestore.vectorstores import FirestoreVectorStore
-
 
 TEST_COLLECTION = "test_collection"
 
