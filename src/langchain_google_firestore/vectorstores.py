@@ -196,6 +196,9 @@ class FirestoreVectorStore(VectorStore):
         This method will throw if the index is not created, in which case you
         will be prompted to create the index.
 
+        Raises:
+            FailedPrecondition: If the index is not created.
+
         Args:
             query: The query text.
             k: The number of documents to return. Defaults to 4.
@@ -226,6 +229,9 @@ class FirestoreVectorStore(VectorStore):
         This method will throw if the index is not created, in which case you
         will be prompted to create the index.
 
+        Raises:
+            FailedPrecondition: If the index is not created.
+
         Args:
             embedding: The query vector.
             k: The number of documents to return. Defaults to 4.
@@ -255,6 +261,9 @@ class FirestoreVectorStore(VectorStore):
         """Run max marginal relevance search on the results of Firestore nearest
         neighbor search. This method will throw if the index is not created,
         in which case you will be prompted to create the index.
+
+        Raises:
+            FailedPrecondition: If the index is not created.
 
         Args:
             query: The query text.
@@ -287,6 +296,9 @@ class FirestoreVectorStore(VectorStore):
         """Run max marginal relevance search on the results of Firestore nearest
         neighbor search using a vector. This method will throw if the index is
         not created, in which case you will be prompted to create the index.
+
+        Raises:
+            FailedPrecondition: If the index is not created.
 
         Args:
             embedding: The query vector.
