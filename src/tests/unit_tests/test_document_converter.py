@@ -14,6 +14,7 @@
 
 import logging
 from unittest.mock import patch
+
 import pytest
 from google.cloud.firestore import (  # type: ignore
     DocumentReference,

@@ -18,12 +18,12 @@ from typing import Any, Callable, Iterable, List, Optional, Type
 
 import more_itertools
 import numpy as np
+from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import (  # type: ignore
     Client,
     CollectionReference,
     DocumentSnapshot,
 )
-from google.cloud import firestore  # type: ignore
 from google.cloud.firestore_v1.base_query import BaseFilter  # type: ignore
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure  # type: ignore
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
