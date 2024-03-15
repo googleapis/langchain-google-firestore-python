@@ -27,6 +27,7 @@ from langchain_google_firestore.document_converter import (
     DOC_REF,
     FIRESTORE_TYPE,
     GEOPOINT,
+    VECTOR,
     convert_firestore_document,
     convert_langchain_document,
 )
@@ -434,7 +435,7 @@ def test_roundtrip_firestore(firestore_doc):
         ),
     ],
 )
-def test_vector_type_conversion(firestore_doc):
+def test_vector_type_from_firestore(firestore_doc):
     """
     Test vector type conversion from langchain to firestore and back.
     """
@@ -443,6 +444,31 @@ def test_vector_type_conversion(firestore_doc):
     # Check that the vector fields are removed
     assert (
         "embedding" not in langchain_doc.page_content
-        and "embedding" not in langchain_doc.metadata
+        and "embedding" in langchain_doc.metadata
     )
     assert "test_doc2" == langchain_doc.page_content
+
+
+def test_vector_type_to_firestore():
+    """
+    Test vector type conversion from langchain to firestore and back.
+    """
+    langchain_doc = Document(
+        page_content="test_doc2",
+        metadata={
+            "reference": {
+                "path": "foo/bar",
+                FIRESTORE_TYPE: DOC_REF,
+            },
+            "embedding": {
+                "values": [1, 2, 3],
+                FIRESTORE_TYPE: VECTOR,
+            },
+        },
+    )
+
+    firestore_doc = convert_langchain_document(langchain_doc, firestore_client)
+
+    # Check that the vector fields are removed
+    assert "embedding" in firestore_doc["data"]
+    assert isinstance(firestore_doc["data"]["embedding"], Vector)

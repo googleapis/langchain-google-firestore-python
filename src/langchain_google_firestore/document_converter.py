@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 FIRESTORE_TYPE = "firestore_type"
 DOC_REF = "document_reference"
 GEOPOINT = "geopoint"
+VECTOR = "vector"
 
 
 def convert_firestore_document(
@@ -43,9 +44,10 @@ def convert_firestore_document(
         }
     }
 
-    # Check for vector fields and remove them
+    # Check for vector fields and move them from the data_doc to the metadata
     for k in list(data_doc.keys()):
         if isinstance(data_doc[k], Vector):
+            metadata[k] = _convert_from_firestore(data_doc[k])
             del data_doc[k]
 
     set_page_fields = set(
@@ -110,6 +112,11 @@ def _convert_from_firestore(val: Any) -> Any:
             "longitude": val.longitude,
             FIRESTORE_TYPE: GEOPOINT,
         }
+    elif isinstance(val, Vector):
+        val_converted = {
+            "values": val.value,
+            FIRESTORE_TYPE: VECTOR,
+        }
 
     return val_converted
 
@@ -123,6 +130,9 @@ def _convert_from_langchain(val: Any, client: Client) -> Any:
             val_converted = DocumentReference(*val["path"].split("/"), client=client)
         elif val.get(FIRESTORE_TYPE) == GEOPOINT:
             val_converted = GeoPoint(val["latitude"], val["longitude"])
+        elif val.get(FIRESTORE_TYPE) == VECTOR:
+            print(val)
+            val_converted = Vector(val["values"])
         else:
             val_converted = {
                 k: _convert_from_langchain(v, client) for k, v in val.items()
