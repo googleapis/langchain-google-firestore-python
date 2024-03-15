@@ -23,6 +23,7 @@ from google.cloud.firestore import (  # type: ignore
     CollectionReference,
     DocumentSnapshot,
 )
+from google.cloud import firestore  # type: ignore
 from google.cloud.firestore_v1.base_query import BaseFilter  # type: ignore
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure  # type: ignore
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
@@ -36,8 +37,6 @@ from langchain_google_firestore.document_converter import convert_firestore_docu
 from .version import __version__
 
 USER_AGENT = "langchain-google-firestore-python:vectorstore" + __version__
-IMPORT_ERROR_MSG = """`google-cloud-firestore` package not found,
-please run `pip3 install google-cloud-firestore`"""
 WRITE_BATCH_SIZE = 500
 DEFAULT_TOP_K = 4
 
@@ -67,14 +66,7 @@ class FirestoreVectorStore(VectorStore):
             embedding_field: The field name to store the text embeddings.
             distance_strategy: The distance strategy to use for calculating distances
             between vectors. Defaults to DistanceStrategy.COSINE.
-
-        Raises:
-            ImportError: If the `firestore` package is not found.
         """
-        try:
-            from google.cloud import firestore  # type: ignore
-        except ModuleNotFoundError as exc:
-            raise ImportError(IMPORT_ERROR_MSG) from exc
 
         # Check if the client is provided, otherwise create a new client with
         # the default client info.
