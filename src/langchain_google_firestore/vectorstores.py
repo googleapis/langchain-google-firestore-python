@@ -114,24 +114,43 @@ class FirestoreVectorStore(VectorStore):
         Returns:
             List[str]: The list of document ids added to the vector store.
         """
+        texts_len = sum(1 for _ in iter(texts))
+        ids_len_match = not ids or len(ids) == texts_len
+        metadatas_len_match = not metadatas or len(metadatas) == texts_len
 
-        _ids = ids or []
+        assert texts_len != 0, "No texts provided to add to the vector store."
+        assert (
+            metadatas_len_match
+        ), "The length of metadatas must be the same as the length of texts or zero."
+        assert (
+            ids_len_match
+        ), "The length of ids must be the same as the length of texts or zero."
+
+        _ids: List[str] = []
         db_batch = self.client.batch()
+
+        def get_doc_id(i: int) -> Optional[str]:
+            if ids:
+                return ids[i]
+            return None
 
         for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
             texts_embs = self.embedding.embed_documents(batch)
             for i, text in enumerate(batch):
-                doc_id = _ids[i] if i < len(_ids) else None
+                doc_id = get_doc_id(i)
                 doc = self.collection.document(doc_id)
-                if doc_id is None:
-                    _ids.append(doc.id)
+                _ids.append(doc.id)
+
                 data = {
                     self.content_field: text,
                     self.embedding_field: Vector(texts_embs[i]),
                 }
+
                 if metadatas:
-                    data.update({self.metadata_field: metadatas[i]})
+                    data[self.metadata_field] = metadatas[i]
+
                 db_batch.set(doc, data, merge=True)
+
             db_batch.commit()
 
         return _ids

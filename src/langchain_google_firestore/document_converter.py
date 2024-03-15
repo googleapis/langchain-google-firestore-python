@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
@@ -32,8 +32,8 @@ GEOPOINT = "geopoint"
 
 def convert_firestore_document(
     document: DocumentSnapshot,
-    page_content_fields: List[str] = [],
-    metadata_fields: List[str] = [],
+    page_content_fields: Optional[List[str]] = None,
+    metadata_fields: Optional[List[str]] = None,
 ) -> Document:
     data_doc = document.to_dict()
     metadata = {
@@ -49,7 +49,7 @@ def convert_firestore_document(
             del data_doc[k]
 
     set_page_fields = set(
-        page_content_fields or (data_doc.keys() - set(metadata_fields))
+        page_content_fields or (data_doc.keys() - set(metadata_fields or []))
     )
     set_metadata_fields = set(metadata_fields or (data_doc.keys() - set_page_fields))
 
@@ -119,7 +119,6 @@ def _convert_from_langchain(val: Any, client: Client) -> Any:
     if isinstance(val, list):
         val_converted = [_convert_from_langchain(v, client) for v in val]
     elif isinstance(val, dict):
-        l = len(val)
         if val.get(FIRESTORE_TYPE) == DOC_REF:
             val_converted = DocumentReference(*val["path"].split("/"), client=client)
         elif val.get(FIRESTORE_TYPE) == GEOPOINT:

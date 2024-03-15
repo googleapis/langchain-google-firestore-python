@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+from unittest.mock import patch
 import pytest
-from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import (  # type: ignore
     DocumentReference,
     DocumentSnapshot,
     GeoPoint,
 )
+from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_core.documents import Document
 
 from langchain_google_firestore.document_converter import (
@@ -28,6 +30,12 @@ from langchain_google_firestore.document_converter import (
     convert_firestore_document,
     convert_langchain_document,
 )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def firestore_client():
+    with patch("google.cloud.firestore.Client") as _fixture:
+        yield _fixture
 
 
 @pytest.mark.parametrize(
@@ -287,7 +295,7 @@ def test_convert_firestore_document_with_filters(
                 "data": {
                     "page_content": "value",
                     "metadata_field": DocumentReference(
-                        *["abc", "xyz"], client=pytest.client
+                        *["abc", "xyz"], client=firestore_client
                     ),
                 },
             },
@@ -370,7 +378,7 @@ def test_convert_firestore_document_with_filters(
     ],
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
-    return_doc = convert_langchain_document(langchain_doc, pytest.client)
+    return_doc = convert_langchain_document(langchain_doc, firestore_client)
     assert return_doc == firestore_doc
 
 
@@ -379,7 +387,7 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
     [
         (
             DocumentSnapshot(
-                reference=DocumentReference(*["foo", "bar"], client=pytest.client),
+                reference=DocumentReference(*["foo", "bar"], client=firestore_client),
                 data={
                     "field_1": GeoPoint(1, 2),
                     "field_2": [
@@ -387,7 +395,7 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
                         2,
                         {
                             "nested": DocumentReference(
-                                *["abc", "xyz"], client=pytest.client
+                                *["abc", "xyz"], client=firestore_client
                             )
                         },
                     ],
@@ -402,7 +410,39 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
 )
 def test_roundtrip_firestore(firestore_doc):
     langchain_doc = convert_firestore_document(firestore_doc)
-    roundtrip_doc = convert_langchain_document(langchain_doc, pytest.client)
+    roundtrip_doc = convert_langchain_document(langchain_doc, firestore_client)
 
     assert roundtrip_doc["data"] == firestore_doc.to_dict()
     assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path
+
+
+@pytest.mark.parametrize(
+    "firestore_doc",
+    [
+        (
+            DocumentSnapshot(
+                reference=DocumentReference(*["foo", "bar"], client=firestore_client),
+                data={
+                    "embedding": Vector([1, 2, 3]),
+                    "content": "test_doc2",
+                },
+                exists=True,
+                read_time=None,
+                create_time=None,
+                update_time=None,
+            )
+        ),
+    ],
+)
+def test_vector_type_conversion(firestore_doc):
+    """
+    Test vector type conversion from langchain to firestore and back.
+    """
+    langchain_doc = convert_firestore_document(firestore_doc)
+
+    # Check that the vector fields are removed
+    assert (
+        "embedding" not in langchain_doc.page_content
+        and "embedding" not in langchain_doc.metadata
+    )
+    assert "test_doc2" == langchain_doc.page_content

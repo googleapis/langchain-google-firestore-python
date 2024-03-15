@@ -28,9 +28,13 @@ def get_embeddings():
     return FakeEmbeddings(size=100)
 
 
+def get_client():
+    return firestore.Client()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_firestore():
-    client = firestore.Client()
+    client = get_client()
     for doc in client.collection(TEST_COLLECTION).stream():
         doc.reference.delete()
 
@@ -59,7 +63,9 @@ def test_firestore_add_vectors():
     An end-to-end test for adding vectors to FirestoreVectorStore.
     """
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, get_embeddings())
+    firestore_store = FirestoreVectorStore(
+        TEST_COLLECTION, get_embeddings(), client=get_client()
+    )
 
     # Add vectors to Firestore
     firestore_store.add_texts(
@@ -80,13 +86,70 @@ def test_firestore_add_vectors():
             assert data["metadata"] == {"baz": "qux"}
 
 
+def test_firestore_add_vectors_auto_id():
+    """
+    An end-to-end test for adding vectors to FirestoreVectorStore.
+    """
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(
+        TEST_COLLECTION, get_embeddings(), client=get_client()
+    )
+
+    # Add vectors to Firestore
+    ids = firestore_store.add_texts(
+        ["test_doc_1", "test_doc_2"],
+    )
+
+    # Verify that the first document was added to Firestore
+    # with a generated ID that matches the returned ID
+    doc = firestore_store.collection.document(ids[0]).get()
+    data = doc.to_dict()
+    assert doc.id == ids[0]
+    assert data["content"] == "test_doc_1"
+
+    # Verify that the second document was added to Firestore
+    # with a generated ID that matches the returned ID
+    doc = firestore_store.collection.document(ids[1]).get()
+    data = doc.to_dict()
+    assert doc.id == ids[1]
+    assert data["content"] == "test_doc_2"
+
+
+def test_firestore_add_vectors_assertions():
+    """
+    Tests assertions in FirestoreVectorStore.add_vectors method.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(
+        TEST_COLLECTION, get_embeddings(), client=get_client()
+    )
+
+    # Test assertions
+    with pytest.raises(AssertionError):
+        firestore_store.add_texts(["test_doc1", "test_doc2"], ids=["1", "2", "3"])
+
+    with pytest.raises(AssertionError):
+        firestore_store.add_texts(
+            ["test_doc1", "test_doc2"], metadatas=[{"foo": "bar"}]
+        )
+
+    with pytest.raises(AssertionError):
+        firestore_store.add_texts(["test_doc1", "test_doc2"], ids=["1"])
+
+    with pytest.raises(AssertionError):
+        firestore_store.add_texts([])
+
+
 def test_firestore_update_vectors():
     """
     An end-to-end test for updating vectors in FirestoreVectorStore.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, get_embeddings())
+    firestore_store = FirestoreVectorStore(
+        TEST_COLLECTION, get_embeddings(), client=get_client()
+    )
 
     # Add vectors to Firestore
     firestore_store.add_texts(["test1", "test2"], ids=["1", "2"])
@@ -109,7 +172,9 @@ def test_firestore_similarity_search():
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, get_embeddings())
+    firestore_store = FirestoreVectorStore(
+        TEST_COLLECTION, get_embeddings(), client=get_client()
+    )
 
     # Add vectors to Firestore
     firestore_store.add_texts(["test1", "test2"], ids=["1", "2"])
@@ -118,4 +183,4 @@ def test_firestore_similarity_search():
     results = firestore_store.similarity_search("test1", k=2)
 
     # Verify that the search results are as expected
-    assert len(results) == 2
+    assert sum(1 for _ in iter(results)) == 2
