@@ -136,7 +136,7 @@ class FirestoreVectorStore(VectorStore):
 
         return _ids
 
-    def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
+    def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> None:
         """Delete documents from the vector store.
 
         Args:
@@ -147,7 +147,7 @@ class FirestoreVectorStore(VectorStore):
         """
 
         if not ids or len(ids) == 0:
-            return True
+            return
 
         for batch in more_itertools.chunked(ids, WRITE_BATCH_SIZE):
             db_batch = self.client.batch()
@@ -155,8 +155,6 @@ class FirestoreVectorStore(VectorStore):
                 doc_ref = self.collection.document(doc_id)
                 db_batch.delete(doc_ref)
             db_batch.commit()
-
-        return True
 
     def _similarity_search(
         self, query: List[float], k: int = DEFAULT_TOP_K, **kwargs: Any
