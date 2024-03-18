@@ -160,9 +160,6 @@ class FirestoreVectorStore(VectorStore):
 
         Args:
             ids: The document ids to delete from the vector store.
-
-        Returns:
-            Optional[bool]: True if the documents are deleted successfully.
         """
 
         if not ids or len(ids) == 0:
