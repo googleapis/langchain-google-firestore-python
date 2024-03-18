@@ -131,7 +131,6 @@ def _convert_from_langchain(val: Any, client: Client) -> Any:
         elif val.get(FIRESTORE_TYPE) == GEOPOINT:
             val_converted = GeoPoint(val["latitude"], val["longitude"])
         elif val.get(FIRESTORE_TYPE) == VECTOR:
-            print(val)
             val_converted = Vector(val["values"])
         else:
             val_converted = {

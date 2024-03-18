@@ -419,7 +419,7 @@ def test_roundtrip_firestore(firestore_doc):
 
 
 @pytest.mark.parametrize(
-    "firestore_doc",
+    "firestore_doc, langchain_doc",
     [
         (
             DocumentSnapshot(
@@ -432,44 +432,103 @@ def test_roundtrip_firestore(firestore_doc):
                 read_time=None,
                 create_time=None,
                 update_time=None,
+            ),
+            Document(
+                page_content="test_doc2",
+                metadata={
+                    "reference": {
+                        "path": "foo/bar",
+                        FIRESTORE_TYPE: DOC_REF,
+                    },
+                    "embedding": {
+                        "values": [1, 2, 3],
+                        FIRESTORE_TYPE: VECTOR,
+                    },
+                },
+            ),
+        ),
+    ],
+)
+def test_vector_type_from_firestore(firestore_doc, langchain_doc):
+    """
+    Test vector type conversion from Firestore to LangChain.
+    """
+
+    assert convert_firestore_document(firestore_doc) == langchain_doc
+
+
+@pytest.mark.parametrize(
+    "langchain_doc, firestore_doc",
+    [
+        (
+            Document(
+                page_content="test_doc2",
+                metadata={
+                    "reference": {
+                        "path": "foo/bar",
+                        FIRESTORE_TYPE: DOC_REF,
+                    },
+                    "embedding": {
+                        "values": [1, 2, 3],
+                        FIRESTORE_TYPE: VECTOR,
+                    },
+                },
+            ),
+            {
+                "reference": {
+                    "path": "foo/bar",
+                    FIRESTORE_TYPE: DOC_REF,
+                },
+                "data": {
+                    "page_content": "test_doc2",
+                    "embedding": Vector([1, 2, 3]),
+                },
+            },
+        ),
+    ],
+)
+def test_vector_type_to_firestore(langchain_doc, firestore_doc):
+    """
+    Test vector type conversion from LangChain to Firestore.
+    """
+
+    assert convert_langchain_document(langchain_doc, firestore_client) == firestore_doc
+
+
+@pytest.mark.parametrize(
+    "firestore_doc",
+    [
+        (
+            DocumentSnapshot(
+                reference=DocumentReference(*["foo", "bar"], client=firestore_client),
+                data={
+                    "field_1": GeoPoint(1, 2),
+                    "field_2": [
+                        "data",
+                        2,
+                        {
+                            "nested": DocumentReference(
+                                *["abc", "xyz"], client=firestore_client
+                            )
+                        },
+                    ],
+                    "field_3": Vector([1, 2, 3]),
+                },
+                exists=True,
+                read_time=None,
+                create_time=None,
+                update_time=None,
             )
         ),
     ],
 )
-def test_vector_type_from_firestore(firestore_doc):
+def test_vector_type_roundtrip(firestore_doc):
     """
-    Test vector type conversion from langchain to firestore and back.
+    Test vector type roundtrip conversion between LangChain and Firestore.
     """
+
     langchain_doc = convert_firestore_document(firestore_doc)
+    roundtrip_doc = convert_langchain_document(langchain_doc, firestore_client)
 
-    # Check that the vector fields are removed
-    assert (
-        "embedding" not in langchain_doc.page_content
-        and "embedding" in langchain_doc.metadata
-    )
-    assert "test_doc2" == langchain_doc.page_content
-
-
-def test_vector_type_to_firestore():
-    """
-    Test vector type conversion from langchain to firestore and back.
-    """
-    langchain_doc = Document(
-        page_content="test_doc2",
-        metadata={
-            "reference": {
-                "path": "foo/bar",
-                FIRESTORE_TYPE: DOC_REF,
-            },
-            "embedding": {
-                "values": [1, 2, 3],
-                FIRESTORE_TYPE: VECTOR,
-            },
-        },
-    )
-
-    firestore_doc = convert_langchain_document(langchain_doc, firestore_client)
-
-    # Check that the vector fields are removed
-    assert "embedding" in firestore_doc["data"]
-    assert isinstance(firestore_doc["data"]["embedding"], Vector)
+    assert roundtrip_doc["data"] == firestore_doc.to_dict()
+    assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path
