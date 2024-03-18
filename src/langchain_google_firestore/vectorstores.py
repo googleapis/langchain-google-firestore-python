@@ -129,15 +129,10 @@ class FirestoreVectorStore(VectorStore):
         _ids: List[str] = []
         db_batch = self.client.batch()
 
-        def get_doc_id(i: int) -> Optional[str]:
-            if ids:
-                return ids[i]
-            return None
-
         for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
             texts_embs = self.embedding.embed_documents(batch)
             for i, text in enumerate(batch):
-                doc_id = get_doc_id(i)
+                doc_id = ids[i] if ids else None
                 doc = self.collection.document(doc_id)
                 _ids.append(doc.id)
 
