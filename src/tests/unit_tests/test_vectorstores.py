@@ -25,16 +25,19 @@ TEST_COLLECTION = "test_collection"
 
 
 def get_embeddings():
+    """Returns a FakeEmbeddings instance with a size of 100."""
     return FakeEmbeddings(size=100)
 
 
-def get_client():
-    return firestore.Client()
+@pytest.fixture(scope="session", autouse=True, name="client")
+def firestore_client():
+    """Returns a Firestore client."""
+    return firestore.Client(client_options={})
 
 
 @pytest.fixture(scope="session", autouse=True)
-def cleanup_firestore():
-    client = get_client()
+def cleanup_firestore(client: firestore.Client):
+    """Deletes all documents in the test collection."""
     for doc in client.collection(TEST_COLLECTION).stream():
         doc.reference.delete()
 
@@ -58,13 +61,13 @@ def test_firestore_vectorstore_initialization():
     assert firestore_store.embeddings == mocked_embeddings
 
 
-def test_firestore_add_vectors():
+def test_firestore_add_vectors(client):
     """
     An end-to-end test for adding vectors to FirestoreVectorStore.
     """
     # Create FirestoreVectorStore instance
     firestore_store = FirestoreVectorStore(
-        TEST_COLLECTION, get_embeddings(), client=get_client()
+        TEST_COLLECTION, get_embeddings(), client=client
     )
 
     # Add vectors to Firestore
@@ -86,13 +89,13 @@ def test_firestore_add_vectors():
             assert data["metadata"] == {"baz": "qux"}
 
 
-def test_firestore_add_vectors_auto_id():
+def test_firestore_add_vectors_auto_id(client):
     """
     An end-to-end test for adding vectors to FirestoreVectorStore.
     """
     # Create FirestoreVectorStore instance
     firestore_store = FirestoreVectorStore(
-        TEST_COLLECTION, get_embeddings(), client=get_client()
+        TEST_COLLECTION, get_embeddings(), client=client
     )
 
     # Add vectors to Firestore
@@ -115,14 +118,14 @@ def test_firestore_add_vectors_auto_id():
     assert data["content"] == "test_doc_2"
 
 
-def test_firestore_add_vectors_assertions():
+def test_firestore_add_vectors_assertions(client):
     """
     Tests assertions in FirestoreVectorStore.add_vectors method.
     """
 
     # Create FirestoreVectorStore instance
     firestore_store = FirestoreVectorStore(
-        TEST_COLLECTION, get_embeddings(), client=get_client()
+        TEST_COLLECTION, get_embeddings(), client=client
     )
 
     # Test assertions
@@ -141,14 +144,14 @@ def test_firestore_add_vectors_assertions():
         firestore_store.add_texts([])
 
 
-def test_firestore_update_vectors():
+def test_firestore_update_vectors(client):
     """
     An end-to-end test for updating vectors in FirestoreVectorStore.
     """
 
     # Create FirestoreVectorStore instance
     firestore_store = FirestoreVectorStore(
-        TEST_COLLECTION, get_embeddings(), client=get_client()
+        TEST_COLLECTION, get_embeddings(), client=client
     )
 
     # Add vectors to Firestore
@@ -166,14 +169,14 @@ def test_firestore_update_vectors():
             assert data["metadata"] == {"baz": "qux"}
 
 
-def test_firestore_similarity_search():
+def test_firestore_similarity_search(client):
     """
     An end-to-end test for similarity search in FirestoreVectorStore.
     """
 
     # Create FirestoreVectorStore instance
     firestore_store = FirestoreVectorStore(
-        TEST_COLLECTION, get_embeddings(), client=get_client()
+        TEST_COLLECTION, get_embeddings(), client=client
     )
 
     # Add vectors to Firestore
