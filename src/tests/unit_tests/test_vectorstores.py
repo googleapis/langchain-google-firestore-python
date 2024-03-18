@@ -183,4 +183,4 @@ def test_firestore_similarity_search():
     results = firestore_store.similarity_search("test1", k=2)
 
     # Verify that the search results are as expected
-    assert sum(1 for _ in iter(results)) == 2
+    assert len(results) == 2
