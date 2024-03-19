@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Iterator, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from google.cloud import firestore  # type: ignore
 from langchain_core.chat_history import BaseChatMessageHistory

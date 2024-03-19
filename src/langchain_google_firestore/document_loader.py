@@ -15,13 +15,13 @@
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING, Any, Iterator, List, Optional
+from typing import TYPE_CHECKING, Iterator, List, Optional
 
-import more_itertools
 from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import DocumentReference  # type: ignore
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
+from more_itertools import chunked
 
 from .common import client_with_user_agent
 from .document_converter import (
@@ -133,7 +133,7 @@ class FirestoreSaver:
 
         docs_list = itertools.zip_longest(documents, document_ids or [])
 
-        for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
+        for batch in chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
                 document_dict = convert_langchain_document(doc, self.client)
                 if self.collection:
@@ -174,7 +174,7 @@ class FirestoreSaver:
 
         docs_list = itertools.zip_longest(documents, document_ids or [])
 
-        for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
+        for batch in chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
                 document_path = None
                 if doc_id:
