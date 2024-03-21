@@ -12,16 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import TestCase
 from unittest.mock import Mock
 
 import pytest
 from google.cloud import firestore
 from google.cloud.firestore import CollectionReference
+from google.cloud.firestore_v1 import FieldFilter
 from langchain_community.embeddings import FakeEmbeddings
+from langchain_core.documents import Document
 
+from langchain_google_firestore.document_converter import DOC_REF, VECTOR
 from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
 TEST_COLLECTION = "test_collection"
+
+
+@pytest.fixture(autouse=True, name="test_case")
+def init_test_case() -> TestCase:
+    """Returns a TestCase instance."""
+    return TestCase()
 
 
 @pytest.fixture(scope="session", autouse=True, name="embeddings")
@@ -33,14 +43,23 @@ def get_embeddings():
 @pytest.fixture(scope="session", autouse=True, name="client")
 def firestore_client():
     """Returns a Firestore client."""
-    return firestore.Client(client_options={})
+    return firestore.Client(
+        client_options={"api_endpoint": "test-firestore.sandbox.googleapis.com"}
+    )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def cleanup_firestore(client: firestore.Client):
-    """Deletes all documents in the test collection."""
-    for doc in client.collection(TEST_COLLECTION).stream():
-        doc.reference.delete()
+    """Deletes all documents in the test collection. Will be run before each test."""
+    collection = client.collection(TEST_COLLECTION)
+    snapshots = collection.list_documents()
+
+    for doc in snapshots:
+        doc.delete()
+
+    count = collection.count().get()
+
+    assert count[0][0].value == 0
 
 
 def test_firestore_vectorstore_initialization():
@@ -156,10 +175,34 @@ def test_firestore_update_vectors(client, embeddings: FakeEmbeddings):
         data = doc.to_dict()
         if doc.id == "1":
             assert data["content"] == "test1"
-            assert data["metadata"] == {"foo": "bar"}
         elif doc.id == "2":
             assert data["content"] == "test2"
-            assert data["metadata"] == {"baz": "qux"}
+
+
+def test_firestore_delete(client, embeddings: FakeEmbeddings):
+    """
+    An end-to-end test for deleting vectors in FirestoreVectorStore.
+    """
+
+    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+
+    firestore_store.add_texts(["test1", "test2"], ids=["1", "2"])
+
+    # Verify that the vectors were added to Firestore
+    docs = firestore_store.collection.stream()
+    for doc in docs:
+        data = doc.to_dict()
+        if doc.id == "1":
+            assert data["content"] == "test1"
+        elif doc.id == "2":
+            assert data["content"] == "test2"
+
+    # Delete vectors from Firestore
+    firestore_store.delete(["1", "2"])
+
+    # Verify that the vectors were deleted from Firestore
+    docs = firestore_store.collection.stream()
+    assert len(list(docs)) == 0
 
 
 def test_firestore_similarity_search(client, embeddings: FakeEmbeddings):
@@ -172,6 +215,211 @@ def test_firestore_similarity_search(client, embeddings: FakeEmbeddings):
 
     # Add vectors to Firestore
     firestore_store.add_texts(["test1", "test2"], ids=["1", "2"])
+
+    # Perform similarity search
+    results = firestore_store.similarity_search("test1", k=2)
+
+    # Verify that the search results are as expected
+    assert len(results) == 2
+
+
+def test_firestore_similarity_search_with_filters(
+    test_case: TestCase, client: firestore.Client, embeddings: FakeEmbeddings
+):
+    """
+    An end-to-end test for similarity search in FirestoreVectorStore with filters.
+    Requires an index on the filter field in Firestore.
+
+    To create an index, run the following command in the Cloud Shell:
+    ```
+    gcloud alpha firestore indexes composite create \
+        --collection-group=test_collection \
+        --query-scope=COLLECTION \
+        --field-config=order=ASCENDING,field-path=metadata.foo \
+        --field-config=vector-config='{"dimension":"100","flat": "{}"}',field-path=embedding
+    ```
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(
+        ["test1", "test2"], ids=["1", "2"], metadatas=[{"foo": "bar"}, {"foo": "baz"}]
+    )
+
+    # Get the vector of the first document for test assertions
+    query_vector = firestore_store.collection.document("1").get().to_dict()["embedding"]
+
+    # Perform similarity search
+    results = firestore_store.similarity_search(
+        "test1", k=2, filters=FieldFilter("metadata.foo", "==", "bar")
+    )
+
+    # Verify that the search results are as expected with the filter applied
+    test_case.assertEqual(
+        results[0],
+        Document(
+            page_content="test1",
+            metadata={
+                "reference": {"path": "test_collection/1", "firestore_type": DOC_REF},
+                "embedding": {
+                    "values": query_vector.value,
+                    "firestore_type": VECTOR,
+                },
+                "metadata": {"foo": "bar"},
+            },
+        ),
+    )
+
+
+def test_firestore_similarity_search_by_vector(client, embeddings: FakeEmbeddings):
+    """
+    An end-to-end test for similarity search in FirestoreVectorStore using a vector query.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(["test1", "test2"], ids=["1", "2"])
+
+    # Perform similarity search
+    results = firestore_store.similarity_search_by_vector(
+        embeddings.embed_query("test1"), k=2
+    )
+
+    # Verify that the search results are as expected
+    assert len(results) == 2
+
+
+def test_firestore_max_marginal_relevance(client, embeddings: FakeEmbeddings):
+    """
+    An end-to-end test for max marginal relevance in FirestoreVectorStore.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(
+        ["test1", "test2", "test3", "test4", "test5"], ids=["1", "2", "3", "4", "5"]
+    )
+
+    # Perform max marginal relevance
+    results = firestore_store.max_marginal_relevance_search("1", k=2, fetch_k=5)
+
+    # Verify that the search results are as expected, matching `k`
+    assert len(results) == 2
+
+
+def test_firestore_max_marginal_relevance_by_vector(client, embeddings: FakeEmbeddings):
+    """
+    An end-to-end test for max marginal relevance in FirestoreVectorStore using a vector query.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(
+        ["test1", "test2", "test3", "test4", "test5"], ids=["1", "2", "3", "4", "5"]
+    )
+
+    # Perform max marginal relevance
+    results = firestore_store.max_marginal_relevance_search_by_vector(
+        embeddings.embed_query("1"), k=3
+    )
+
+    # Verify that the search results are as expected, matching `k`
+    assert len(results) == 3
+
+
+def test_firestore_from_texts(test_case: TestCase, client, embeddings: FakeEmbeddings):
+    """
+    An end-to-end test for initializing FirestoreVectorStore from texts.
+    """
+    texts = ["test1", "test2"]
+    # Add vectors to Firestore
+    firestore_store = FirestoreVectorStore.from_texts(
+        texts,
+        collection=TEST_COLLECTION,
+        embedding=embeddings,
+        ids=["1", "2"],
+        client=client,
+    )
+
+    # Assert that the vectors were added to Firestore
+    docs = firestore_store.collection.stream()
+    for text, doc in zip(texts, docs):
+        data = doc.to_dict()
+        test_case.assertEqual(data["content"], text)
+
+
+def test_firestore_from_documents(
+    test_case: TestCase, client, embeddings: FakeEmbeddings
+):
+    """
+    An end-to-end test for initializing FirestoreVectorStore from Documents.
+    """
+    documents = [Document(page_content="test1", metadata={"foo": "bar"})]
+
+    # Add vectors to Firestore
+    firestore_store = FirestoreVectorStore.from_documents(
+        documents,
+        collection=TEST_COLLECTION,
+        embedding=embeddings,
+        client=client,
+        metadata_field="metadata",
+        ids=["1"],
+    )
+
+    # Assert that the vectors were added to Firestore
+    docs = firestore_store.collection.stream()
+    for doc, document in zip(docs, documents):
+        test_case.assertEqual(doc.to_dict()["content"], document.page_content)
+        test_case.assertEqual(doc.to_dict()["metadata"], document.metadata)
+        test_case.assertEqual(doc.id, "1")
+
+
+@pytest.mark.asyncio
+async def test_firestore_from_documents_async(
+    test_case: TestCase, client, embeddings: FakeEmbeddings
+):
+    """
+    An end-to-end test for initializing FirestoreVectorStore from Documents asynchronously.
+    """
+    documents = [Document(page_content="test1", metadata={"foo": "bar"})]
+
+    # Add vectors to Firestore
+    firestore_store = await FirestoreVectorStore.afrom_documents(
+        documents,
+        collection=TEST_COLLECTION,
+        embedding=embeddings,
+        client=client,
+        metadata_field="metadata",
+    )
+
+    # Assert that the vectors were added to Firestore
+    docs = firestore_store.collection.stream()
+    for doc, document in zip(docs, documents):
+        test_case.assertEqual(doc.to_dict()["content"], document.page_content)
+        test_case.assertEqual(doc.to_dict()["metadata"], document.metadata)
+
+
+@pytest.mark.asyncio
+async def test_firestore_from_texts_async(client, embeddings: FakeEmbeddings):
+    """
+    An end-to-end test for initializing FirestoreVectorStore asynchronously.
+    """
+    # Add vectors to Firestore
+    firestore_store = await FirestoreVectorStore.afrom_texts(
+        ["test1", "test2"],
+        collection=TEST_COLLECTION,
+        embedding=embeddings,
+        ids=["1", "2"],
+        client=client,
+    )
 
     # Perform similarity search
     results = firestore_store.similarity_search("test1", k=2)

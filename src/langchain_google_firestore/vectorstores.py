@@ -325,12 +325,14 @@ class FirestoreVectorStore(VectorStore):
 
     @classmethod
     def from_texts(
-        cls: Type["FirestoreVectorStore"],
+        cls: Type[FirestoreVectorStore],
         texts: List[str],
         embedding: Embeddings,
         metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        collection: Optional[str | CollectionReference] = None,
         **kwargs: Any,
-    ) -> "FirestoreVectorStore":
+    ) -> FirestoreVectorStore:
         """Create a FirestoreVectorStore instance and add texts to it.
 
         Args:
@@ -341,55 +343,12 @@ class FirestoreVectorStore(VectorStore):
         Returns:
             FirestoreVectorStore: The FirestoreVectorStore instance.
         """
-        vs_obj = FirestoreVectorStore(embedding=embedding, **kwargs)
-        vs_obj.add_texts(texts, metadatas)
+        if collection is None:
+            raise ValueError("Must provide 'collection' named parameter.")
+
+        vs_obj = cls(collection=collection, embedding=embedding, **kwargs)
+        vs_obj.add_texts(texts, metadatas, ids, **kwargs)
         return vs_obj
-
-    @classmethod
-    async def afrom_texts(
-        cls: Type["FirestoreVectorStore"],
-        texts: List[str],
-        embedding: Embeddings,
-        metadatas: Optional[List[dict]] = None,
-        **kwargs: Any,
-    ) -> "FirestoreVectorStore":
-        vs_obj = FirestoreVectorStore(embedding=embedding, **kwargs)
-        await vs_obj.aadd_texts(texts, metadatas)
-        return vs_obj
-
-    @classmethod
-    def from_documents(
-        cls: Type["FirestoreVectorStore"],
-        documents: List[Document],
-        embedding: Embeddings,
-        **kwargs: Any,
-    ) -> "FirestoreVectorStore":
-        """Create a FirestoreVectorStore instance and add documents to it.
-
-        Args:
-            documents: The documents to add to the vector store.
-            embedding: The embeddings to use to generate the vectors from documents.
-        """
-        texts = [doc.page_content for doc in documents]
-        metadatas = [doc.metadata for doc in documents]
-
-        return FirestoreVectorStore.from_texts(
-            texts, embedding, metadatas=metadatas, **kwargs
-        )
-
-    @classmethod
-    async def afrom_documents(
-        cls: Type["FirestoreVectorStore"],
-        documents: List[Document],
-        embedding: Embeddings,
-        **kwargs: Any,
-    ) -> "FirestoreVectorStore":
-        texts = [doc.page_content for doc in documents]
-        metadatas = [doc.metadata for doc in documents]
-
-        return await FirestoreVectorStore.afrom_texts(
-            texts, embedding, metadatas=metadatas, **kwargs
-        )
 
     def _select_relevance_score_fn(self) -> Callable[[float], float]:
         if self.distance_strategy == DistanceMeasure.COSINE:
