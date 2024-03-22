@@ -350,16 +350,5 @@ class FirestoreVectorStore(VectorStore):
         vs_obj.add_texts(texts, metadatas, ids, **kwargs)
         return vs_obj
 
-    def _select_relevance_score_fn(self) -> Callable[[float], float]:
-        if self.distance_strategy == DistanceMeasure.COSINE:
-            return FirestoreVectorStore._cosine_relevance_score_fn
-        if self.distance_strategy == DistanceMeasure.EUCLIDEAN:
-            return FirestoreVectorStore._euclidean_relevance_score_fn
-
-        raise ValueError(
-            "Relevance score is not supported "
-            f"for `{self.distance_strategy}` distance."
-        )
-
     def _vector_to_list(self, vector: Vector) -> List[float]:
         return vector.to_map_value()["value"]
