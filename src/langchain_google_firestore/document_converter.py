@@ -45,10 +45,9 @@ def convert_firestore_document(
     }
 
     # Check for vector fields and move them from the data_doc to the metadata
-    for k in list(data_doc.keys()):
-        if isinstance(data_doc[k], Vector):
-            metadata[k] = _convert_from_firestore(data_doc[k])
-            del data_doc[k]
+    vector_keys = [k for k in data_doc if isinstance(data_doc[k], Vector)]
+    for k in vector_keys:
+        metadata[k] = _convert_from_firestore(data_doc.pop(k))
 
     set_page_fields = set(
         page_content_fields or (data_doc.keys() - set(metadata_fields or []))
