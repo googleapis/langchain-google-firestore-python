@@ -33,7 +33,7 @@ from langchain_google_firestore.document_converter import (
 )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def firestore_client():
     with patch("google.cloud.firestore.Client") as _fixture:
         yield _fixture
