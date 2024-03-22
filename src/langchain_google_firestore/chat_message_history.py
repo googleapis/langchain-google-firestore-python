@@ -21,6 +21,7 @@ from google.cloud import firestore  # type: ignore
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, messages_from_dict
 
+from .common import client_with_user_agent
 from .version import __version__
 
 USER_AGENT = "langchain-google-firestore-python:chat_history/" + __version__
@@ -44,13 +45,7 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
             collection: The single `/`-delimited path to a Firestore collection.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        self.client = client or firestore.Client()
-        client_agent = self.client._client_info.user_agent
-        if not client_agent:
-            self.client._client_info.user_agent = USER_AGENT
-        elif USER_AGENT not in client_agent:
-            self.client._client_info.user_agent = " ".join([client_agent, USER_AGENT])
-
+        self.client = client_with_user_agent(client, USER_AGENT)
         self.session_id = session_id
         self.doc_ref = self.client.collection(collection).document(session_id)
         self.messages: List[BaseMessage] = []
@@ -81,4 +76,5 @@ def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
 
 def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
     dict_messages = [json.loads(m.decode()) for m in messages]
+    return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])
     return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])

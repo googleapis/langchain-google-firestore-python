@@ -23,6 +23,7 @@ from google.cloud.firestore import DocumentReference  # type: ignore
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
+from .common import client_with_user_agent
 from .document_converter import (
     DOC_REF,
     FIRESTORE_TYPE,
@@ -37,7 +38,7 @@ WRITE_BATCH_SIZE = 500
 
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, CollectionGroup, DocumentReference, Query
+    from google.cloud.firestore import Client, CollectionGroup, Query
 
 
 class FirestoreLoader(BaseLoader):
@@ -197,14 +198,3 @@ class FirestoreSaver:
                 )
                 db_batch.delete(doc_ref)
             db_batch.commit()
-
-
-def client_with_user_agent(client: Client, user_agent: str) -> Client:
-    if not client:
-        client = firestore.Client()
-    client_agent = client._client_info.user_agent
-    if not client_agent:
-        client._client_info.user_agent = user_agent
-    elif user_agent in client_agent:
-        client._client_info.user_agent = " ".join([client_agent, user_agent])
-    return client
