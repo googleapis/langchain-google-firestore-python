@@ -41,9 +41,7 @@ def get_embeddings():
 @pytest.fixture(scope="module", autouse=True, name="client")
 def firestore_client():
     """Returns a Firestore client."""
-    return firestore.Client(
-        client_options={"api_endpoint": "test-firestore.sandbox.googleapis.com"}
-    )
+    return firestore.Client()
 
 
 @pytest.fixture(autouse=True)
