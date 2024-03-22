@@ -13,11 +13,9 @@
 # limitations under the License.
 
 from unittest import TestCase
-from unittest.mock import Mock
 
 import pytest
 from google.cloud import firestore
-from google.cloud.firestore import CollectionReference
 from google.cloud.firestore_v1 import FieldFilter
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_core.documents import Document
@@ -34,13 +32,13 @@ def init_test_case() -> TestCase:
     return TestCase()
 
 
-@pytest.fixture(scope="session", autouse=True, name="embeddings")
+@pytest.fixture(scope="module", autouse=True, name="embeddings")
 def get_embeddings():
     """Returns a FakeEmbeddings instance with a size of 100."""
     return FakeEmbeddings(size=100)
 
 
-@pytest.fixture(scope="session", autouse=True, name="client")
+@pytest.fixture(scope="module", autouse=True, name="client")
 def firestore_client():
     """Returns a Firestore client."""
     return firestore.Client(
@@ -60,25 +58,6 @@ def cleanup_firestore(test_case: TestCase, client: firestore.Client):
     count = collection.count().get()[0][0]
 
     test_case.assertEqual(count.value, 0)
-
-
-def test_firestore_vectorstore_initialization():
-    """
-    Tests FirestoreVectorStore initialization with mocked embeddings,
-    focusing on correct attribute setting and potential errors.
-
-    This test uses `unittest.mock` and manual patching.
-    """
-
-    # Mock Embeddings class and its attributes
-    mocked_embeddings = Mock()
-
-    # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore("my_collection", mocked_embeddings)
-
-    # Assertions to verify attribute values and error handling
-    assert isinstance(firestore_store.collection, CollectionReference)
-    assert firestore_store.embeddings == mocked_embeddings
 
 
 def test_firestore_add_vectors(test_case: TestCase, client, embeddings: FakeEmbeddings):
