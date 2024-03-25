@@ -77,4 +77,3 @@ def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
 def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
     dict_messages = [json.loads(m.decode()) for m in messages]
     return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])
-    return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])
