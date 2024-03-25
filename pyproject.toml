@@ -43,3 +43,7 @@ profile = "black"
 [tool.mypy]
 python_version = "3.11"
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module="google.cloud.*"
+ignore_missing_imports = true
