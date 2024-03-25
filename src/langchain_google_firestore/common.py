@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from google.cloud import firestore  # type: ignore
-from google.cloud.firestore_v1.services.firestore.transports.base import (
-    DEFAULT_CLIENT_INFO,  # type: ignore
+from google.cloud.firestore_v1.services.firestore.transports.base import (  # type: ignore
+    DEFAULT_CLIENT_INFO,
 )
 
 
