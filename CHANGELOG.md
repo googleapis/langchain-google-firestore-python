@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.2](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.1.1...v0.1.2) (2024-03-25)
+
+
+### Bug Fixes
+
+* Update user agent ([#37](https://github.com/googleapis/langchain-google-firestore-python/issues/37)) ([f61fd80](https://github.com/googleapis/langchain-google-firestore-python/commit/f61fd80d56669ac4f33e56f1c47c83e8c02b6a63))
+
+
+### Documentation
+
+* Add github links ([#28](https://github.com/googleapis/langchain-google-firestore-python/issues/28)) ([b403206](https://github.com/googleapis/langchain-google-firestore-python/commit/b403206ee2b16ac1e3b467ab2cd9de887fb71e38))
+* Fix install command ([#36](https://github.com/googleapis/langchain-google-firestore-python/issues/36)) ([b2d5850](https://github.com/googleapis/langchain-google-firestore-python/commit/b2d58500e7f2e7493cedb6fc38d3af6f226aff41))
+
 ## [0.1.1](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.1.0...v0.1.1) (2024-03-06)
 
 
