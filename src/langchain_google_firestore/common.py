@@ -31,4 +31,3 @@ def client_with_user_agent(
     elif user_agent not in client_agent:
         client._client_info.user_agent = " ".join([user_agent, client_agent])
     return client
-    return client
