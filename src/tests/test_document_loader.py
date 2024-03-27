@@ -14,6 +14,7 @@
 
 import time
 import unittest.mock as mock
+import uuid
 from unittest import TestCase
 
 import pytest
@@ -34,8 +35,9 @@ def client() -> Client:
 
 
 def test_firestore_write_roundtrip_and_load() -> None:
-    saver = FirestoreSaver("WriteRoundTrip")
-    loader = FirestoreLoader("WriteRoundTrip")
+    source = "WriteRoundTrip" + str(uuid.uuid4())
+    saver = FirestoreSaver(source)
+    loader = FirestoreLoader(source)
 
     docs = [Document(page_content="data", metadata={})]
 
@@ -57,8 +59,9 @@ def test_firestore_write_roundtrip_and_load() -> None:
 
 
 def test_firestore_write_load_batch(test_case: TestCase) -> None:
-    saver = FirestoreSaver("WriteBatch")
-    loader = FirestoreLoader("WriteBatch")
+    source = "WriteBatch" + str(uuid.uuid4())
+    saver = FirestoreSaver(source)
+    loader = FirestoreLoader(source)
     NUM_DOCS = 1000
 
     docs = []
@@ -91,15 +94,16 @@ def test_firestore_write_load_batch(test_case: TestCase) -> None:
 
 
 def test_firestore_write_with_reference(test_case: TestCase) -> None:
+    source = "WriteRef" + str(uuid.uuid4())
     saver = FirestoreSaver()
-    loader = FirestoreLoader("WriteRef")
+    loader = FirestoreLoader(source)
 
     expected_doc = [
         Document(
             page_content='{"f1": 1, "f2": 2}',
             metadata={
                 "reference": {
-                    "path": "WriteRef/doc",
+                    "path": source + "/doc",
                     "firestore_type": "document_reference",
                 }
             },
@@ -129,8 +133,9 @@ def test_firestore_write_doc_id_error(test_case: TestCase) -> None:
 
 
 def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
+    source = "WriteId" + str(uuid.uuid4())
     saver = FirestoreSaver()
-    loader = FirestoreLoader("WriteId")
+    loader = FirestoreLoader(source)
 
     doc_to_insert = [
         Document(
@@ -146,13 +151,13 @@ def test_firestore_write_with_doc_id(test_case: TestCase) -> None:
             page_content='{"f1": 1, "f2": 2}',
             metadata={
                 "reference": {
-                    "path": "WriteId/doc",
+                    "path": source + "/doc",
                     "firestore_type": "document_reference",
                 }
             },
         )
     ]
-    doc_id = ["WriteId/doc"]
+    doc_id = [source + "/doc"]
     saver.upsert_documents(documents=doc_to_insert, document_ids=doc_id)
     # wait 1s for consistency
     time.sleep(1)
@@ -183,9 +188,10 @@ def test_firestore_load_with_fields(
     expected_metadata,
     test_case: TestCase,
 ):
-    saver = FirestoreSaver("WritePageFields")
+    source = "WritePageFields" + str(uuid.uuid4())
+    saver = FirestoreSaver(source)
     loader = FirestoreLoader(
-        source="WritePageFields",
+        source=source,
         page_content_fields=page_fields,
         metadata_fields=metadata_fields,
     )
@@ -211,15 +217,16 @@ def test_firestore_load_with_fields(
 
 
 def test_firestore_load_from_subcollection(test_case: TestCase):
+    source = "collection/doc/subcol" + str(uuid.uuid4())
     saver = FirestoreSaver()
-    loader = FirestoreLoader("collection/doc/subcol")
+    loader = FirestoreLoader(source)
 
     doc_to_insert = [
         Document(
             page_content="data",
             metadata={
                 "reference": {
-                    "path": "collection/doc/subcol/sdoc",
+                    "path": source + "/sdoc",
                     "firestore_type": "document_reference",
                 }
             },
@@ -240,8 +247,9 @@ def test_firestore_load_from_subcollection(test_case: TestCase):
 
 
 def test_firestore_load_from_query(test_case: TestCase, client: Client):
-    saver = FirestoreSaver("WriteQuery")
-    loader_cleanup = FirestoreLoader("WriteQuery")
+    source = "WriteQuery" + str(uuid.uuid4())
+    saver = FirestoreSaver(source)
+    loader_cleanup = FirestoreLoader(source)
 
     docs_to_insert = [
         Document(page_content='{"num": 20, "region": "west_coast"}'),
@@ -260,7 +268,7 @@ def test_firestore_load_from_query(test_case: TestCase, client: Client):
         ),
     ]
 
-    col_ref = client.collection("WriteQuery")
+    col_ref = client.collection(source)
     query = col_ref.where(filter=FieldFilter("region", "==", "west_coast"))
     loader = FirestoreLoader(query)
 
@@ -279,13 +287,15 @@ def test_firestore_load_from_query(test_case: TestCase, client: Client):
 
 def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
+    source_1 = "ColGroup" + str(uuid.uuid4())
+    source_2 = "foo" + str(uuid.uuid4())
 
     docs_to_insert = [
         Document(
             page_content="data_A",
             metadata={
                 "reference": {
-                    "path": "ColA/doc/ColGroup/doc1",
+                    "path": "ColA/doc/" + source_1 + "/doc1",
                     "firestore_type": "document_reference",
                 }
             },
@@ -294,7 +304,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_B",
             metadata={
                 "reference": {
-                    "path": "ColB/doc/ColGroup/doc2",
+                    "path": "ColA/doc/" + source_1 + "/doc2",
                     "firestore_type": "document_reference",
                 }
             },
@@ -302,7 +312,10 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
         Document(
             page_content="data_C",
             metadata={
-                "reference": {"path": "foo/bar", "firestore_type": "document_reference"}
+                "reference": {
+                    "path": source_2 + "/bar",
+                    "firestore_type": "document_reference",
+                }
             },
         ),
     ]
@@ -311,7 +324,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_A",
             metadata={
                 "reference": {
-                    "path": "ColA/doc/ColGroup/doc1",
+                    "path": "ColA/doc/" + source_1 + "/doc1",
                     "firestore_type": "document_reference",
                 }
             },
@@ -320,7 +333,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_B",
             metadata={
                 "reference": {
-                    "path": "ColB/doc/ColGroup/doc2",
+                    "path": "ColA/doc/" + source_1 + "/doc2",
                     "firestore_type": "document_reference",
                 }
             },
@@ -331,7 +344,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     # wait 1s for consistency
     time.sleep(1)
 
-    col_ref = client.collection("ColGroup")
+    col_ref = client.collection(source_1)
     collection_group = CollectionGroup(col_ref)
     loader = FirestoreLoader(collection_group)
     loaded_docs = loader.load()
@@ -343,16 +356,21 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
 def test_firestore_load_from_doc_ref(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
 
+    source = "foo" + str(uuid.uuid4())
+
     doc_to_insert = [
         Document(
             page_content="data",
             metadata={
-                "reference": {"path": "foo/bar", "firestore_type": "document_reference"}
+                "reference": {
+                    "path": source + "/bar",
+                    "firestore_type": "document_reference",
+                }
             },
         )
     ]
 
-    doc_ref = client.collection("foo").document("bar")
+    doc_ref = client.collection(source).document("bar")
 
     saver.upsert_documents(doc_to_insert)
     # wait 1s for consistency
@@ -374,8 +392,9 @@ def test_firestore_empty_load():
 
 def test_firestore_custom_client() -> None:
     client = Client(database="(default)")
-    saver = FirestoreSaver("Custom", client=client)
-    loader = FirestoreLoader("Custom", client=client)
+    source = "Custom" + str(uuid.uuid4())
+    saver = FirestoreSaver(source, client=client)
+    loader = FirestoreLoader(source, client=client)
 
     docs = [Document(page_content="data", metadata={})]
 
