@@ -354,18 +354,21 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
 def test_firestore_load_from_doc_ref(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
 
-    source = "foo/bar" + str(uuid.uuid4())
+    source = "foo" + str(uuid.uuid4())
 
     doc_to_insert = [
         Document(
             page_content="data",
             metadata={
-                "reference": {"path": source, "firestore_type": "document_reference"}
+                "reference": {
+                    "path": source + "/bar",
+                    "firestore_type": "document_reference",
+                }
             },
         )
     ]
 
-    doc_ref = client.collection("foo").document("bar")
+    doc_ref = client.collection(source).document("bar")
 
     saver.upsert_documents(doc_to_insert)
     # wait 1s for consistency
