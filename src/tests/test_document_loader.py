@@ -287,16 +287,15 @@ def test_firestore_load_from_query(test_case: TestCase, client: Client):
 
 def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
-    source_1 = "ColA/doc/ColGroup/doc1" + str(uuid.uuid4())
-    source_2 = "ColB/doc/ColGroup/doc2" + str(uuid.uuid4())
-    source_3 = "foo/bar" + str(uuid.uuid4())
+    source_1 = "ColGroup" + str(uuid.uuid4())
+    source_2 = "foo" + str(uuid.uuid4())
 
     docs_to_insert = [
         Document(
             page_content="data_A",
             metadata={
                 "reference": {
-                    "path": source_1,
+                    "path": "ColA/doc/" + source_1 + "/doc1",
                     "firestore_type": "document_reference",
                 }
             },
@@ -305,7 +304,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_B",
             metadata={
                 "reference": {
-                    "path": source_2,
+                    "path": "ColA/doc/" + source_1 + "/doc2",
                     "firestore_type": "document_reference",
                 }
             },
@@ -313,7 +312,10 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
         Document(
             page_content="data_C",
             metadata={
-                "reference": {"path": source_3, "firestore_type": "document_reference"}
+                "reference": {
+                    "path": source_2 + "/bar",
+                    "firestore_type": "document_reference",
+                }
             },
         ),
     ]
@@ -322,7 +324,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_A",
             metadata={
                 "reference": {
-                    "path": source_1,
+                    "path": "ColA/doc/" + source_1 + "/doc1",
                     "firestore_type": "document_reference",
                 }
             },
@@ -331,7 +333,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_B",
             metadata={
                 "reference": {
-                    "path": source_2,
+                    "path": "ColA/doc/" + source_1 + "/doc2",
                     "firestore_type": "document_reference",
                 }
             },
@@ -342,7 +344,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     # wait 1s for consistency
     time.sleep(1)
 
-    col_ref = client.collection("ColGroup")
+    col_ref = client.collection(source_1)
     collection_group = CollectionGroup(col_ref)
     loader = FirestoreLoader(collection_group)
     loaded_docs = loader.load()
