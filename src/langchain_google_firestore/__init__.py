@@ -19,9 +19,9 @@ from langchain_google_firestore.vectorstores import FirestoreVectorStore
 from .version import __version__
 
 __all__ = [
-    "__version__",
     "FirestoreChatMessageHistory",
     "FirestoreLoader",
     "FirestoreSaver",
     "FirestoreVectorStore",
+    "__version__",
 ]

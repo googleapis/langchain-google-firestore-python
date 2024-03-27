@@ -66,7 +66,11 @@ def firestore_client():
                 reference=DocumentReference("foo", "bar"),
                 data={
                     "field_1": GeoPoint(1, 2),
-                    "field_2": ["data", 2, {"nested": DocumentReference("abc", "xyz")}],
+                    "field_2": [
+                        "data",
+                        2,
+                        {"nested": DocumentReference("abc", "xyz")},
+                    ],
                 },
                 exists=True,
                 read_time=None,
@@ -259,7 +263,10 @@ def test_convert_firestore_document_with_filters(
         ),
         (
             Document(page_content="value", metadata={"reference": {}}),
-            {"reference": None, "data": {"page_content": "value", "reference": {}}},
+            {
+                "reference": None,
+                "data": {"page_content": "value", "reference": {}},
+            },
         ),
         (
             Document(
@@ -270,7 +277,10 @@ def test_convert_firestore_document_with_filters(
                 "reference": None,
                 "data": {
                     "page_content": "value",
-                    "reference": {"path": "foo/bar", "unexpected_field": "data"},
+                    "reference": {
+                        "path": "foo/bar",
+                        "unexpected_field": "data",
+                    },
                 },
             },
         ),
@@ -317,7 +327,11 @@ def test_convert_firestore_document_with_filters(
                     "path": "foo/bar",
                     FIRESTORE_TYPE: DOC_REF,
                 },
-                "data": {"field_1": "val_1", "field_2": "val_2", "field_3": "val_3"},
+                "data": {
+                    "field_1": "val_1",
+                    "field_2": "val_2",
+                    "field_3": "val_3",
+                },
             },
         ),
         (
@@ -362,7 +376,10 @@ def test_convert_firestore_document_with_filters(
                 "data": {"point": GeoPoint(1, 2), "field_2": "val_2"},
             },
         ),
-        (Document(page_content="", metadata={}), {"reference": None, "data": {}}),
+        (
+            Document(page_content="", metadata={}),
+            {"reference": None, "data": {}},
+        ),
         (
             Document(
                 page_content='{"array":[1, "data", {"k_1":"v_1", "k_point": {"latitude":1, "longitude":0, "firestore_type": "geopoint"}}], "f_2":2}',
@@ -371,7 +388,11 @@ def test_convert_firestore_document_with_filters(
             {
                 "reference": None,
                 "data": {
-                    "array": [1, "data", {"k_1": "v_1", "k_point": GeoPoint(1, 0)}],
+                    "array": [
+                        1,
+                        "data",
+                        {"k_1": "v_1", "k_point": GeoPoint(1, 0)},
+                    ],
                     "f_2": 2,
                 },
             },
