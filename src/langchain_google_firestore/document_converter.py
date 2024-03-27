@@ -21,7 +21,7 @@ from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
 from langchain_core.documents import Document
 
 if TYPE_CHECKING:
-    from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
+    from google.cloud.firestore import Client, DocumentSnapshot
 
 
 FIRESTORE_TYPE = "firestore_type"

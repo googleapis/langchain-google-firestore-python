@@ -15,13 +15,13 @@
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING, Any, Iterator, List, Optional
+from typing import TYPE_CHECKING, Iterator, List, Optional
 
-import more_itertools
 from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import DocumentReference  # type: ignore
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
+from more_itertools import chunked
 
 from .common import client_with_user_agent
 from .document_converter import (
@@ -61,7 +61,7 @@ class FirestoreLoader(BaseLoader):
                 By default it will write all fields that are not in `page_content` into `metadata`.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        self.client = client_with_user_agent(client, USER_AGENT_LOADER)
+        self.client = client_with_user_agent(USER_AGENT_LOADER, client)
         self.source = source
         self.page_content_fields = page_content_fields
         self.metadata_fields = metadata_fields
@@ -75,7 +75,7 @@ class FirestoreLoader(BaseLoader):
         query = None
         if isinstance(self.source, DocumentReference):
             self.source._client = client_with_user_agent(
-                self.source._client, USER_AGENT_LOADER
+                USER_AGENT_LOADER, self.source._client
             )
             yield convert_firestore_document(self.source.get())
         else:
@@ -83,7 +83,7 @@ class FirestoreLoader(BaseLoader):
                 query = self.client.collection(self.source)
             else:
                 query = self.source
-                client_with_user_agent(query._client, USER_AGENT_LOADER)
+                client_with_user_agent(USER_AGENT_LOADER, query._client)
 
             for document_snapshot in query.stream():
                 yield convert_firestore_document(
@@ -108,7 +108,7 @@ class FirestoreSaver:
             client: Client for interacting with the Google Cloud Firestore API.
         """
         self.collection = collection
-        self.client = client_with_user_agent(client, USER_AGENT_SAVER)
+        self.client = client_with_user_agent(USER_AGENT_SAVER, client)
 
     def upsert_documents(
         self,
@@ -133,7 +133,7 @@ class FirestoreSaver:
 
         docs_list = itertools.zip_longest(documents, document_ids or [])
 
-        for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
+        for batch in chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
                 document_dict = convert_langchain_document(doc, self.client)
                 if self.collection:
@@ -174,7 +174,7 @@ class FirestoreSaver:
 
         docs_list = itertools.zip_longest(documents, document_ids or [])
 
-        for batch in more_itertools.chunked(docs_list, WRITE_BATCH_SIZE):
+        for batch in chunked(docs_list, WRITE_BATCH_SIZE):
             for doc, doc_id in batch:
                 document_path = None
                 if doc_id:
