@@ -29,6 +29,8 @@ from langchain_google_firestore.document_converter import (
     convert_langchain_document,
 )
 
+client = firestore.Client()
+
 
 @pytest.mark.parametrize(
     "document_snapshot,langchain_doc",
@@ -57,7 +59,11 @@ from langchain_google_firestore.document_converter import (
                 reference=DocumentReference("foo", "bar"),
                 data={
                     "field_1": GeoPoint(1, 2),
-                    "field_2": ["data", 2, {"nested": DocumentReference("abc", "xyz")}],
+                    "field_2": [
+                        "data",
+                        2,
+                        {"nested": DocumentReference("abc", "xyz")},
+                    ],
                 },
                 exists=True,
                 read_time=None,
@@ -250,7 +256,10 @@ def test_convert_firestore_document_with_filters(
         ),
         (
             Document(page_content="value", metadata={"reference": {}}),
-            {"reference": None, "data": {"page_content": "value", "reference": {}}},
+            {
+                "reference": None,
+                "data": {"page_content": "value", "reference": {}},
+            },
         ),
         (
             Document(
@@ -261,7 +270,10 @@ def test_convert_firestore_document_with_filters(
                 "reference": None,
                 "data": {
                     "page_content": "value",
-                    "reference": {"path": "foo/bar", "unexpected_field": "data"},
+                    "reference": {
+                        "path": "foo/bar",
+                        "unexpected_field": "data",
+                    },
                 },
             },
         ),
@@ -286,9 +298,7 @@ def test_convert_firestore_document_with_filters(
                 },
                 "data": {
                     "page_content": "value",
-                    "metadata_field": DocumentReference(
-                        *["abc", "xyz"], client=pytest.client
-                    ),
+                    "metadata_field": DocumentReference(*["abc", "xyz"], client=client),
                 },
             },
         ),
@@ -308,7 +318,11 @@ def test_convert_firestore_document_with_filters(
                     "path": "foo/bar",
                     FIRESTORE_TYPE: DOC_REF,
                 },
-                "data": {"field_1": "val_1", "field_2": "val_2", "field_3": "val_3"},
+                "data": {
+                    "field_1": "val_1",
+                    "field_2": "val_2",
+                    "field_3": "val_3",
+                },
             },
         ),
         (
@@ -353,7 +367,10 @@ def test_convert_firestore_document_with_filters(
                 "data": {"point": GeoPoint(1, 2), "field_2": "val_2"},
             },
         ),
-        (Document(page_content="", metadata={}), {"reference": None, "data": {}}),
+        (
+            Document(page_content="", metadata={}),
+            {"reference": None, "data": {}},
+        ),
         (
             Document(
                 page_content='{"array":[1, "data", {"k_1":"v_1", "k_point": {"latitude":1, "longitude":0, "firestore_type": "geopoint"}}], "f_2":2}',
@@ -362,7 +379,11 @@ def test_convert_firestore_document_with_filters(
             {
                 "reference": None,
                 "data": {
-                    "array": [1, "data", {"k_1": "v_1", "k_point": GeoPoint(1, 0)}],
+                    "array": [
+                        1,
+                        "data",
+                        {"k_1": "v_1", "k_point": GeoPoint(1, 0)},
+                    ],
                     "f_2": 2,
                 },
             },
@@ -370,7 +391,7 @@ def test_convert_firestore_document_with_filters(
     ],
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
-    return_doc = convert_langchain_document(langchain_doc, pytest.client)
+    return_doc = convert_langchain_document(langchain_doc, client)
     assert return_doc == firestore_doc
 
 
@@ -379,17 +400,13 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
     [
         (
             DocumentSnapshot(
-                reference=DocumentReference(*["foo", "bar"], client=pytest.client),
+                reference=DocumentReference(*["foo", "bar"], client=client),
                 data={
                     "field_1": GeoPoint(1, 2),
                     "field_2": [
                         "data",
                         2,
-                        {
-                            "nested": DocumentReference(
-                                *["abc", "xyz"], client=pytest.client
-                            )
-                        },
+                        {"nested": DocumentReference(*["abc", "xyz"], client=client)},
                     ],
                 },
                 exists=True,
@@ -402,7 +419,7 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
 )
 def test_roundtrip_firestore(firestore_doc):
     langchain_doc = convert_firestore_document(firestore_doc)
-    roundtrip_doc = convert_langchain_document(langchain_doc, pytest.client)
+    roundtrip_doc = convert_langchain_document(langchain_doc, client)
 
     assert roundtrip_doc["data"] == firestore_doc.to_dict()
     assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path
