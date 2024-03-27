@@ -287,13 +287,16 @@ def test_firestore_load_from_query(test_case: TestCase, client: Client):
 
 def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
+    source_1 = "ColA/doc/ColGroup/doc1" + str(uuid.uuid4())
+    source_2 = "ColB/doc/ColGroup/doc2" + str(uuid.uuid4())
+    source_3 = "foo/bar" + str(uuid.uuid4())
 
     docs_to_insert = [
         Document(
             page_content="data_A",
             metadata={
                 "reference": {
-                    "path": "ColA/doc/ColGroup/doc1",
+                    "path": source_1,
                     "firestore_type": "document_reference",
                 }
             },
@@ -302,7 +305,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_B",
             metadata={
                 "reference": {
-                    "path": "ColB/doc/ColGroup/doc2",
+                    "path": source_2,
                     "firestore_type": "document_reference",
                 }
             },
@@ -310,7 +313,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
         Document(
             page_content="data_C",
             metadata={
-                "reference": {"path": "foo/bar", "firestore_type": "document_reference"}
+                "reference": {"path": source_3, "firestore_type": "document_reference"}
             },
         ),
     ]
@@ -319,7 +322,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_A",
             metadata={
                 "reference": {
-                    "path": "ColA/doc/ColGroup/doc1",
+                    "path": source_1,
                     "firestore_type": "document_reference",
                 }
             },
@@ -328,7 +331,7 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
             page_content="data_B",
             metadata={
                 "reference": {
-                    "path": "ColB/doc/ColGroup/doc2",
+                    "path": source_2,
                     "firestore_type": "document_reference",
                 }
             },
@@ -351,11 +354,13 @@ def test_firestore_load_from_col_group(test_case: TestCase, client: Client):
 def test_firestore_load_from_doc_ref(test_case: TestCase, client: Client):
     saver = FirestoreSaver()
 
+    source = "foo/bar" + str(uuid.uuid4())
+
     doc_to_insert = [
         Document(
             page_content="data",
             metadata={
-                "reference": {"path": "foo/bar", "firestore_type": "document_reference"}
+                "reference": {"path": source, "firestore_type": "document_reference"}
             },
         )
     ]
@@ -382,8 +387,9 @@ def test_firestore_empty_load():
 
 def test_firestore_custom_client() -> None:
     client = Client(database="(default)")
-    saver = FirestoreSaver("Custom", client=client)
-    loader = FirestoreLoader("Custom", client=client)
+    source = "Custom" + str(uuid.uuid4())
+    saver = FirestoreSaver(source, client=client)
+    loader = FirestoreLoader(source, client=client)
 
     docs = [Document(page_content="data", metadata={})]
 
