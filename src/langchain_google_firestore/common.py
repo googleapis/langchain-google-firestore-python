@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
+
 from google.cloud import firestore  # type: ignore
 from google.cloud.firestore_v1.services.firestore.transports.base import (  # type: ignore
     DEFAULT_CLIENT_INFO,
@@ -19,7 +21,7 @@ from google.cloud.firestore_v1.services.firestore.transports.base import (  # ty
 
 
 def client_with_user_agent(
-    client: firestore.Client | None, user_agent: str
+    user_agent: str, client: Optional[firestore.Client] = None
 ) -> firestore.Client:
     client_info = DEFAULT_CLIENT_INFO
     client_info.user_agent = user_agent

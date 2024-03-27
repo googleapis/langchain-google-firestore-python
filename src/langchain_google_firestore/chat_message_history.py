@@ -45,7 +45,7 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
             collection: The single `/`-delimited path to a Firestore collection.
             client: Client for interacting with the Google Cloud Firestore API.
         """
-        self.client = client_with_user_agent(client, USER_AGENT)
+        self.client = client_with_user_agent(USER_AGENT, client)
         self.session_id = session_id
         self.doc_ref = self.client.collection(collection).document(session_id)
         self.messages: List[BaseMessage] = []
