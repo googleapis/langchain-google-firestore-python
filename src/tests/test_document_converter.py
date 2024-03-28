@@ -12,24 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest.mock import patch
+
 import pytest
-from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import (  # type: ignore
     DocumentReference,
     DocumentSnapshot,
     GeoPoint,
 )
+from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_core.documents import Document
 
 from langchain_google_firestore.document_converter import (
     DOC_REF,
     FIRESTORE_TYPE,
     GEOPOINT,
+    VECTOR,
     convert_firestore_document,
     convert_langchain_document,
 )
 
-client = firestore.Client()
+
+@pytest.fixture(scope="module", autouse=True)
+def firestore_client():
+    with patch("google.cloud.firestore.Client") as _fixture:
+        yield _fixture
 
 
 @pytest.mark.parametrize(
@@ -298,7 +305,9 @@ def test_convert_firestore_document_with_filters(
                 },
                 "data": {
                     "page_content": "value",
-                    "metadata_field": DocumentReference(*["abc", "xyz"], client=client),
+                    "metadata_field": DocumentReference(
+                        *["abc", "xyz"], client=firestore_client
+                    ),
                 },
             },
         ),
@@ -391,7 +400,7 @@ def test_convert_firestore_document_with_filters(
     ],
 )
 def test_convert_langchain_document(langchain_doc, firestore_doc):
-    return_doc = convert_langchain_document(langchain_doc, client)
+    return_doc = convert_langchain_document(langchain_doc, firestore_client)
     assert return_doc == firestore_doc
 
 
@@ -400,13 +409,17 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
     [
         (
             DocumentSnapshot(
-                reference=DocumentReference(*["foo", "bar"], client=client),
+                reference=DocumentReference(*["foo", "bar"], client=firestore_client),
                 data={
                     "field_1": GeoPoint(1, 2),
                     "field_2": [
                         "data",
                         2,
-                        {"nested": DocumentReference(*["abc", "xyz"], client=client)},
+                        {
+                            "nested": DocumentReference(
+                                *["abc", "xyz"], client=firestore_client
+                            )
+                        },
                     ],
                 },
                 exists=True,
@@ -419,7 +432,123 @@ def test_convert_langchain_document(langchain_doc, firestore_doc):
 )
 def test_roundtrip_firestore(firestore_doc):
     langchain_doc = convert_firestore_document(firestore_doc)
-    roundtrip_doc = convert_langchain_document(langchain_doc, client)
+    roundtrip_doc = convert_langchain_document(langchain_doc, firestore_client)
+
+    assert roundtrip_doc["data"] == firestore_doc.to_dict()
+    assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path
+
+
+@pytest.mark.parametrize(
+    "firestore_doc, langchain_doc",
+    [
+        (
+            DocumentSnapshot(
+                reference=DocumentReference(*["foo", "bar"], client=firestore_client),
+                data={
+                    "embedding": Vector([1, 2, 3]),
+                    "content": "test_doc2",
+                },
+                exists=True,
+                read_time=None,
+                create_time=None,
+                update_time=None,
+            ),
+            Document(
+                page_content="test_doc2",
+                metadata={
+                    "reference": {
+                        "path": "foo/bar",
+                        FIRESTORE_TYPE: DOC_REF,
+                    },
+                    "embedding": {
+                        "values": [1, 2, 3],
+                        FIRESTORE_TYPE: VECTOR,
+                    },
+                },
+            ),
+        ),
+    ],
+)
+def test_vector_type_from_firestore(firestore_doc, langchain_doc):
+    """
+    Test vector type conversion from Firestore to LangChain.
+    """
+
+    assert convert_firestore_document(firestore_doc) == langchain_doc
+
+
+@pytest.mark.parametrize(
+    "langchain_doc, firestore_doc",
+    [
+        (
+            Document(
+                page_content="test_doc2",
+                metadata={
+                    "reference": {
+                        "path": "foo/bar",
+                        FIRESTORE_TYPE: DOC_REF,
+                    },
+                    "embedding": {
+                        "values": [1, 2, 3],
+                        FIRESTORE_TYPE: VECTOR,
+                    },
+                },
+            ),
+            {
+                "reference": {
+                    "path": "foo/bar",
+                    FIRESTORE_TYPE: DOC_REF,
+                },
+                "data": {
+                    "page_content": "test_doc2",
+                    "embedding": Vector([1, 2, 3]),
+                },
+            },
+        ),
+    ],
+)
+def test_vector_type_to_firestore(langchain_doc, firestore_doc):
+    """
+    Test vector type conversion from LangChain to Firestore.
+    """
+
+    assert convert_langchain_document(langchain_doc, firestore_client) == firestore_doc
+
+
+@pytest.mark.parametrize(
+    "firestore_doc",
+    [
+        (
+            DocumentSnapshot(
+                reference=DocumentReference(*["foo", "bar"], client=firestore_client),
+                data={
+                    "field_1": GeoPoint(1, 2),
+                    "field_2": [
+                        "data",
+                        2,
+                        {
+                            "nested": DocumentReference(
+                                *["abc", "xyz"], client=firestore_client
+                            )
+                        },
+                    ],
+                    "field_3": Vector([1, 2, 3]),
+                },
+                exists=True,
+                read_time=None,
+                create_time=None,
+                update_time=None,
+            )
+        ),
+    ],
+)
+def test_vector_type_roundtrip(firestore_doc):
+    """
+    Test vector type roundtrip conversion between LangChain and Firestore.
+    """
+
+    langchain_doc = convert_firestore_document(firestore_doc)
+    roundtrip_doc = convert_langchain_document(langchain_doc, firestore_client)
 
     assert roundtrip_doc["data"] == firestore_doc.to_dict()
     assert roundtrip_doc["reference"]["path"] == firestore_doc.reference.path
