@@ -214,9 +214,9 @@ class FirestoreVectorStore(VectorStore):
         )
         return [
             convert_firestore_document(
-                docs[i], page_content_fields=[self.content_field]
+                doc, page_content_fields=[self.content_field]
             )
-            for i in range(len(docs))
+            for doc in docs
         ]
 
     def similarity_search_by_vector(
