@@ -18,7 +18,6 @@ from typing import Any, Iterable, List, Optional, Type
 
 import more_itertools
 import numpy as np
-from google.cloud import firestore  # type: ignore
 from google.cloud.firestore import (  # type: ignore
     Client,
     CollectionReference,
@@ -32,6 +31,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
+from .common import client_with_user_agent
 from .document_converter import convert_firestore_document
 from .version import __version__
 
@@ -46,7 +46,7 @@ class FirestoreVectorStore(VectorStore):
     def __init__(
         self,
         collection: CollectionReference | str,
-        embedding: Embeddings,
+        embedding_service: Embeddings,
         client: Optional[Client] = None,
         content_field: str = "content",
         metadata_field: str = "metadata",
@@ -57,32 +57,27 @@ class FirestoreVectorStore(VectorStore):
         """Constructor for FirestoreVectorStore.
 
         Args:
-            source: The source collection or document reference to store the data.
-            embedding: The embeddings to use for the vector store.
-            client: The Firestore client to use. If not provided, a new client will be created.
-            content_field: The field name to store the content data.
-            metadata_field: The field name to store the metadata.
-            embedding_field: The field name to store the text embeddings.
-            distance_strategy: The distance strategy to use for calculating distances
-            between vectors. Defaults to DistanceStrategy.COSINE.
+            source (CollectionReference | str): The source collection or document
+            reference to store the data.
+            embedding (Embeddings): The embeddings to use for the vector store.
+            client (Optional[Client]): The Firestore client to use. If not provided,
+            a new client will be created.
+            content_field (str): The field name to store the content data.
+            metadata_field (str): The field name to store the metadata.
+            embedding_field (str): The field name to store the text embeddings.
+            distance_strategy (Optional[DistanceMeasure]): The distance strategy to use for
+            calculating distances between vectors. Defaults to DistanceStrategy.COSINE.
+            filters (Optional[BaseFilter]): The pre-filters to apply to the query. Defaults to None.
         """
 
-        # Check if the client is provided, otherwise create a new client with
-        # the default client info.
-        self.client = client or firestore.Client()
-
-        client_agent = self.client._client_info.user_agent
-        if not client_agent:
-            self.client._client_info.user_agent = USER_AGENT
-        elif USER_AGENT not in client_agent:
-            self.client._client_info.user_agent = " ".join([client_agent, USER_AGENT])
+        self.client = client_with_user_agent(USER_AGENT, client)
 
         if isinstance(collection, str):
             self.collection = self.client.collection(collection)
         else:
             self.collection = collection
 
-        self.embedding = embedding
+        self.embedding_service = embedding_service
         self.content_field = content_field
         self.metadata_field = metadata_field
         self.embedding_field = embedding_field
@@ -91,7 +86,7 @@ class FirestoreVectorStore(VectorStore):
 
     @property
     def embeddings(self) -> Optional[Embeddings]:
-        return self.embedding
+        return self.embedding_service
 
     def add_texts(
         self,
@@ -117,19 +112,24 @@ class FirestoreVectorStore(VectorStore):
         ids_len_match = not ids or len(ids) == texts_len
         metadatas_len_match = not metadatas or len(metadatas) == texts_len
 
-        assert texts_len != 0, "No texts provided to add to the vector store."
-        assert (
-            metadatas_len_match
-        ), "The length of metadatas must be the same as the length of texts or zero."
-        assert (
-            ids_len_match
-        ), "The length of ids must be the same as the length of texts or zero."
+        if texts_len == 0:
+            raise ValueError("No texts provided to add to the vector store.")
+
+        if not metadatas_len_match:
+            raise ValueError(
+                "The length of metadatas must be the same as the length of texts or zero."
+            )
+
+        if not ids_len_match:
+            raise ValueError(
+                "The length of ids must be the same as the length of texts or zero."
+            )
 
         _ids: List[str] = []
         db_batch = self.client.batch()
 
         for batch in more_itertools.chunked(texts, WRITE_BATCH_SIZE):
-            texts_embs = self.embedding.embed_documents(batch)
+            texts_embs = self.embedding_service.embed_documents(batch)
             for i, text in enumerate(batch):
                 doc_id = ids[i] if ids else None
                 doc = self.collection.document(doc_id)
@@ -167,14 +167,17 @@ class FirestoreVectorStore(VectorStore):
             db_batch.commit()
 
     def _similarity_search(
-        self, query: List[float], k: int = DEFAULT_TOP_K, **kwargs: Any
+        self,
+        query: List[float],
+        k: int = DEFAULT_TOP_K,
+        filters: Optional[BaseFilter] = None,
     ) -> List[DocumentSnapshot]:
-        filters = kwargs.get("filters") or self.filters
+        _filters = filters or self.filters
 
         wfilters = None
 
-        if filters is not None:
-            wfilters = self.collection.where(filter=filters)
+        if _filters is not None:
+            wfilters = self.collection.where(filter=_filters)
 
         results = (wfilters or self.collection).find_nearest(
             vector_field=self.embedding_field,
@@ -207,7 +210,7 @@ class FirestoreVectorStore(VectorStore):
         """
 
         docs = self._similarity_search(
-            self.embedding.embed_query(query), k, filters=filters
+            self.embedding_service.embed_query(query), k, filters=filters
         )
         return [
             convert_firestore_document(doc, page_content_fields=[self.content_field])
@@ -237,10 +240,8 @@ class FirestoreVectorStore(VectorStore):
 
         docs = self._similarity_search(embedding, k, filters=filters)
         return [
-            convert_firestore_document(
-                docs[i], page_content_fields=[self.content_field]
-            )
-            for i in range(len(docs))
+            convert_firestore_document(doc, page_content_fields=[self.content_field])
+            for doc in docs
         ]
 
     def max_marginal_relevance_search(
@@ -253,8 +254,7 @@ class FirestoreVectorStore(VectorStore):
         **kwargs: Any,
     ) -> List[Document]:
         """Run max marginal relevance search on the results of Firestore nearest
-        neighbor search. This method will throw if the index is not created,
-        in which case you will be prompted to create the index.
+        neighbor search.
 
         Raises:
             FailedPrecondition: If the index is not created.
@@ -269,7 +269,7 @@ class FirestoreVectorStore(VectorStore):
         Returns:
             List[Document]: List of documents most similar to the query text.
         """
-        query_embedding = self.embedding.embed_query(query)
+        query_embedding = self.embedding_service.embed_query(query)
         return self.max_marginal_relevance_search_by_vector(
             query_embedding,
             k=k,
@@ -339,7 +339,7 @@ class FirestoreVectorStore(VectorStore):
         if collection is None:
             raise ValueError("Must provide 'collection' named parameter.")
 
-        vs_obj = cls(collection=collection, embedding=embedding, **kwargs)
+        vs_obj = cls(collection=collection, embedding_service=embedding, **kwargs)
         vs_obj.add_texts(texts, metadatas, ids, **kwargs)
         return vs_obj
 

@@ -15,7 +15,6 @@
 from .chat_message_history import FirestoreChatMessageHistory
 from .document_loader import FirestoreLoader, FirestoreSaver
 from .vectorstores import FirestoreVectorStore
-
 from .version import __version__
 
 __all__ = [

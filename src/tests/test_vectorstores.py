@@ -121,28 +121,28 @@ def test_firestore_add_vectors_assertions(
 
     # Test assertions
     test_case.assertRaises(
-        AssertionError,
+        ValueError,
         firestore_store.add_texts,
         texts,
         ids=["1", "2", "3"],
     )
 
     test_case.assertRaises(
-        AssertionError,
+        ValueError,
         firestore_store.add_texts,
         texts,
         metadatas=[{"foo": "bar"}],
     )
 
     test_case.assertRaises(
-        AssertionError,
+        ValueError,
         firestore_store.add_texts,
         texts,
         ids=["1"],
     )
 
     test_case.assertRaises(
-        AssertionError,
+        ValueError,
         firestore_store.add_texts,
         [],
     )
