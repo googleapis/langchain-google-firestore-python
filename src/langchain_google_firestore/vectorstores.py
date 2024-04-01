@@ -113,7 +113,7 @@ class FirestoreVectorStore(VectorStore):
         Returns:
             List[str]: The list of document ids added to the vector store.
         """
-        texts_len = sum(1 for _ in iter(texts))
+        texts_len = len(list(texts))
         ids_len_match = not ids or len(ids) == texts_len
         metadatas_len_match = not metadatas or len(metadatas) == texts_len
 
