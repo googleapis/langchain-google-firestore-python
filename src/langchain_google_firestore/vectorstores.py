@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, List, Optional, Type
+from typing import Any, Iterable, List, Optional, Type
 
 import more_itertools
 import numpy as np
@@ -32,8 +32,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 
-from langchain_google_firestore.document_converter import convert_firestore_document
-
+from .document_converter import convert_firestore_document
 from .version import __version__
 
 USER_AGENT = "langchain-google-firestore-python:vectorstore" + __version__
@@ -194,8 +193,6 @@ class FirestoreVectorStore(VectorStore):
         **kwargs: Any,
     ) -> List[Document]:
         """Run similarity search with Firestore.
-        This method will throw if the index is not created, in which case you
-        will be prompted to create the index.
 
         Raises:
             FailedPrecondition: If the index is not created.
@@ -213,9 +210,7 @@ class FirestoreVectorStore(VectorStore):
             self.embedding.embed_query(query), k, filters=filters
         )
         return [
-            convert_firestore_document(
-                doc, page_content_fields=[self.content_field]
-            )
+            convert_firestore_document(doc, page_content_fields=[self.content_field])
             for doc in docs
         ]
 
@@ -227,8 +222,6 @@ class FirestoreVectorStore(VectorStore):
         **kwargs: Any,
     ) -> List[Document]:
         """Run similarity search with Firestore using a vector.
-        This method will throw if the index is not created, in which case you
-        will be prompted to create the index.
 
         Raises:
             FailedPrecondition: If the index is not created.
