@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from unittest import TestCase
 
 import pytest
@@ -23,7 +24,12 @@ from langchain_core.documents import Document
 from langchain_google_firestore.document_converter import DOC_REF, VECTOR
 from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
-TEST_COLLECTION = "test_collection"
+
+@pytest.fixture(scope="module", autouse=True, name="test_collection")
+def test_collection_id():
+    # Get current Python version
+    python_version = f"{sys.version_info.major}{sys.version_info.minor}"
+    return f"test_collection_{python_version}"
 
 
 @pytest.fixture(autouse=True, name="test_case")
@@ -45,9 +51,11 @@ def firestore_client():
 
 
 @pytest.fixture(autouse=True)
-def cleanup_firestore(test_case: TestCase, client: firestore.Client):
+def cleanup_firestore(
+    test_case: TestCase, test_collection: str, client: firestore.Client
+):
     """Deletes all documents in the test collection. Will be run before each test."""
-    collection = client.collection(TEST_COLLECTION)
+    collection = client.collection(test_collection)
     snapshots = collection.list_documents()
 
     for doc in snapshots:
@@ -58,12 +66,17 @@ def cleanup_firestore(test_case: TestCase, client: firestore.Client):
     test_case.assertEqual(count.value, 0)
 
 
-def test_firestore_add_vectors(test_case: TestCase, client, embeddings: FakeEmbeddings):
+def test_firestore_add_vectors(
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    embeddings: FakeEmbeddings,
+):
     """
     An end-to-end test for adding vectors to FirestoreVectorStore.
     """
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     texts = ["test_doc1", "test_doc2"]
     metadatas = [{"foo": "bar"}, {"baz": "qux"}]
@@ -84,13 +97,13 @@ def test_firestore_add_vectors(test_case: TestCase, client, embeddings: FakeEmbe
 
 
 def test_firestore_add_vectors_auto_id(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for adding vectors to FirestoreVectorStore.
     """
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     texts = ["test_doc_1", "test_doc_2"]
 
@@ -109,14 +122,14 @@ def test_firestore_add_vectors_auto_id(
 
 
 def test_firestore_add_vectors_assertions(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     Tests assertions in FirestoreVectorStore.add_vectors method.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
     texts = ["test_doc1", "test_doc2"]
 
     # Test assertions
@@ -149,14 +162,14 @@ def test_firestore_add_vectors_assertions(
 
 
 def test_firestore_update_vectors(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for updating vectors in FirestoreVectorStore.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
     texts = ["test1", "test2"]
     ids = ["1", "2"]
 
@@ -171,12 +184,14 @@ def test_firestore_update_vectors(
         test_case.assertEqual(doc.id, _id)
 
 
-def test_firestore_delete(test_case: TestCase, client, embeddings: FakeEmbeddings):
+def test_firestore_delete(
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+):
     """
     An end-to-end test for deleting vectors in FirestoreVectorStore.
     """
 
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     texts = ["test1", "test2"]
     ids = ["1", "2"]
@@ -196,14 +211,14 @@ def test_firestore_delete(test_case: TestCase, client, embeddings: FakeEmbedding
 
 
 def test_firestore_similarity_search(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for similarity search in FirestoreVectorStore.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     texts = ["test1", "test2"]
     k = 2
@@ -219,7 +234,10 @@ def test_firestore_similarity_search(
 
 
 def test_firestore_similarity_search_with_filters(
-    test_case: TestCase, client: firestore.Client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for similarity search in FirestoreVectorStore with filters.
@@ -236,7 +254,7 @@ def test_firestore_similarity_search_with_filters(
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     # Add vectors to Firestore
     firestore_store.add_texts(
@@ -269,14 +287,14 @@ def test_firestore_similarity_search_with_filters(
 
 
 def test_firestore_similarity_search_by_vector(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for similarity search in FirestoreVectorStore using a vector query.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     k = 2
 
@@ -293,14 +311,14 @@ def test_firestore_similarity_search_by_vector(
 
 
 def test_firestore_max_marginal_relevance(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for max marginal relevance in FirestoreVectorStore.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     k = 2
 
@@ -317,14 +335,14 @@ def test_firestore_max_marginal_relevance(
 
 
 def test_firestore_max_marginal_relevance_by_vector(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for max marginal relevance in FirestoreVectorStore using a vector query.
     """
 
     # Create FirestoreVectorStore instance
-    firestore_store = FirestoreVectorStore(TEST_COLLECTION, embeddings, client=client)
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
 
     k = 3
 
@@ -342,7 +360,9 @@ def test_firestore_max_marginal_relevance_by_vector(
     test_case.assertEqual(len(results), k)
 
 
-def test_firestore_from_texts(test_case: TestCase, client, embeddings: FakeEmbeddings):
+def test_firestore_from_texts(
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+):
     """
     An end-to-end test for initializing FirestoreVectorStore from texts.
     """
@@ -350,7 +370,7 @@ def test_firestore_from_texts(test_case: TestCase, client, embeddings: FakeEmbed
     # Add vectors to Firestore
     firestore_store = FirestoreVectorStore.from_texts(
         texts,
-        collection=TEST_COLLECTION,
+        collection=test_collection,
         embedding=embeddings,
         ids=["1", "2"],
         client=client,
@@ -364,7 +384,7 @@ def test_firestore_from_texts(test_case: TestCase, client, embeddings: FakeEmbed
 
 
 def test_firestore_from_documents(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore from Documents.
@@ -374,7 +394,7 @@ def test_firestore_from_documents(
     # Add vectors to Firestore
     firestore_store = FirestoreVectorStore.from_documents(
         documents,
-        collection=TEST_COLLECTION,
+        collection=test_collection,
         embedding=embeddings,
         client=client,
         metadata_field="metadata",
@@ -391,7 +411,7 @@ def test_firestore_from_documents(
 
 @pytest.mark.asyncio
 async def test_firestore_from_documents_async(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore from Documents asynchronously.
@@ -401,7 +421,7 @@ async def test_firestore_from_documents_async(
     # Add vectors to Firestore
     firestore_store = await FirestoreVectorStore.afrom_documents(
         documents,
-        collection=TEST_COLLECTION,
+        collection=test_collection,
         embedding=embeddings,
         client=client,
         metadata_field="metadata",
@@ -416,7 +436,7 @@ async def test_firestore_from_documents_async(
 
 @pytest.mark.asyncio
 async def test_firestore_from_texts_async(
-    test_case: TestCase, client, embeddings: FakeEmbeddings
+    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore asynchronously.
@@ -424,7 +444,7 @@ async def test_firestore_from_texts_async(
     # Add vectors to Firestore
     firestore_store = await FirestoreVectorStore.afrom_texts(
         ["test1", "test2"],
-        collection=TEST_COLLECTION,
+        collection=test_collection,
         embedding=embeddings,
         ids=["1", "2"],
         client=client,
