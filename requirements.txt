@@ -1,6 +1,4 @@
 langchain-core==0.1.35
 langchain-community==0.0.28
-# This is a fork of the original package that adds support for vector search
-# TODO remove this once the original package is updated
-google-cloud-firestore@git+https://github.com/pl04351820/python-firestore.git@vector
+google-cloud-firestore==2.16.0
 more_itertools==10.2.0

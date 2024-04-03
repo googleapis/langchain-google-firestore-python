@@ -112,8 +112,9 @@ def _convert_from_firestore(val: Any) -> Any:
             FIRESTORE_TYPE: GEOPOINT,
         }
     elif isinstance(val, Vector):
+        vector_map = val.to_map_value()
         val_converted = {
-            "values": val.value,
+            "values": list(vector_map["value"]),
             FIRESTORE_TYPE: VECTOR,
         }
 

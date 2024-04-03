@@ -259,7 +259,7 @@ def test_firestore_similarity_search_with_filters(
             metadata={
                 "reference": {"path": "test_collection/1", "firestore_type": DOC_REF},
                 "embedding": {
-                    "values": query_vector.value,
+                    "values": list(query_vector.to_map_value()["value"]),
                     "firestore_type": VECTOR,
                 },
                 "metadata": {"foo": "bar"},
