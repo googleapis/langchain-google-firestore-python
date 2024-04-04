@@ -63,6 +63,27 @@ history = FirestoreChatMessageHistory(
 
 See the full [Chat Message History][history] tutorial.
 
+## Vector Store Usage
+
+Use `FirestoreVectorStore` to embed, store and query `Document`s.
+
+```python
+from langchain_google_firestore import FirestoreVectorStore
+from langchain_google_vertexai import VertexAIEmbeddings
+
+embedding = VertexAIEmbeddings(
+    model_name="textembedding-gecko@latest",
+    project=PROJECT_ID,
+)
+
+store = FirestoreVectorStore(
+    collection="VectorStore",
+    embedding=
+)
+```
+
+See the full [Vector Store][vectorstores] tutorial.
+
 ## Contributing
 
 Contributions to this library are always welcome and highly encouraged.
@@ -88,6 +109,7 @@ This is not an officially supported Google product.
 [venv]: https://virtualenv.pypa.io/en/latest/
 [loader]: https://github.com/googleapis/langchain-google-firestore-python/tree/main/docs/document_loader.ipynb
 [history]: https://github.com/googleapis/langchain-google-firestore-python/tree/main/docs/chat_message_history.ipynb
+[vectorstores]: https://github.com/googleapis/langchain-google-firestore-python/tree/main/docs/vectorstores.ipynb
 [langchain]: https://github.com/langchain-ai/langchain
 [docs]: https://github.com/googleapis/langchain-google-firestore-python/tree/main/docs
 [license]: https://github.com/googleapis/langchain-google-firestore-python/tree/main/LICENSE
