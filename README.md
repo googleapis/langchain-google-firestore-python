@@ -33,6 +33,24 @@ source <your-env>/bin/activate
 <your-env>/bin/pip install langchain-google-firestore
 ```
 
+## Vector Store Usage
+
+Use `FirestoreVectorStore` to embed, store and query `Document`s.
+
+```python
+from langchain_google_firestore import FirestoreVectorStore
+from langchain_google_vertexai import VertexAIEmbeddings
+
+
+embedding = VertexAIEmbeddings()
+store = FirestoreVectorStore(
+    collection="VectorStore",
+    embedding=embedding
+)
+```
+
+See the full [Vector Store][vectorstores] tutorial.
+
 ## Document Loader Usage
 
 Use a document loader to load data as LangChain `Document`s.
@@ -62,27 +80,6 @@ history = FirestoreChatMessageHistory(
 ```
 
 See the full [Chat Message History][history] tutorial.
-
-## Vector Store Usage
-
-Use `FirestoreVectorStore` to embed, store and query `Document`s.
-
-```python
-from langchain_google_firestore import FirestoreVectorStore
-from langchain_google_vertexai import VertexAIEmbeddings
-
-embedding = VertexAIEmbeddings(
-    model_name="textembedding-gecko@latest",
-    project=PROJECT_ID,
-)
-
-store = FirestoreVectorStore(
-    collection="VectorStore",
-    embedding=
-)
-```
-
-See the full [Vector Store][vectorstores] tutorial.
 
 ## Contributing
 
