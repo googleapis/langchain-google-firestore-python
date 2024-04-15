@@ -15,9 +15,10 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from google.cloud.firestore import DocumentReference, GeoPoint  # type: ignore
+from google.cloud.firestore_v1.vector import Vector  # type: ignore
 from langchain_core.documents import Document
 
 if TYPE_CHECKING:
@@ -27,12 +28,13 @@ if TYPE_CHECKING:
 FIRESTORE_TYPE = "firestore_type"
 DOC_REF = "document_reference"
 GEOPOINT = "geopoint"
+VECTOR = "vector"
 
 
 def convert_firestore_document(
     document: DocumentSnapshot,
-    page_content_fields: List[str] = [],
-    metadata_fields: List[str] = [],
+    page_content_fields: Optional[List[str]] = None,
+    metadata_fields: Optional[List[str]] = None,
 ) -> Document:
     data_doc = document.to_dict()
     metadata = {
@@ -42,8 +44,13 @@ def convert_firestore_document(
         }
     }
 
+    # Check for vector fields and move them from the data_doc to the metadata
+    vector_keys = [k for k in data_doc if isinstance(data_doc[k], Vector)]
+    for k in vector_keys:
+        metadata[k] = _convert_from_firestore(data_doc.pop(k))
+
     set_page_fields = set(
-        page_content_fields or (data_doc.keys() - set(metadata_fields))
+        page_content_fields or (data_doc.keys() - set(metadata_fields or []))
     )
     set_metadata_fields = set(metadata_fields or (data_doc.keys() - set_page_fields))
 
@@ -104,6 +111,12 @@ def _convert_from_firestore(val: Any) -> Any:
             "longitude": val.longitude,
             FIRESTORE_TYPE: GEOPOINT,
         }
+    elif isinstance(val, Vector):
+        vector_map = val.to_map_value()
+        val_converted = {
+            "values": list(vector_map["value"]),
+            FIRESTORE_TYPE: VECTOR,
+        }
 
     return val_converted
 
@@ -113,11 +126,12 @@ def _convert_from_langchain(val: Any, client: Client) -> Any:
     if isinstance(val, list):
         val_converted = [_convert_from_langchain(v, client) for v in val]
     elif isinstance(val, dict):
-        l = len(val)
         if val.get(FIRESTORE_TYPE) == DOC_REF:
             val_converted = DocumentReference(*val["path"].split("/"), client=client)
         elif val.get(FIRESTORE_TYPE) == GEOPOINT:
             val_converted = GeoPoint(val["latitude"], val["longitude"])
+        elif val.get(FIRESTORE_TYPE) == VECTOR:
+            val_converted = Vector(val["values"])
         else:
             val_converted = {
                 k: _convert_from_langchain(v, client) for k, v in val.items()

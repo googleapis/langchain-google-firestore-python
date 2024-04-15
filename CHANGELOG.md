@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.1.2...v0.2.0) (2024-04-03)
+
+
+### Features
+
+* **ci:** Test against multiple versions ([#35](https://github.com/googleapis/langchain-google-firestore-python/issues/35)) ([1639f3a](https://github.com/googleapis/langchain-google-firestore-python/commit/1639f3a839f7608fba86e7aee9e7733a4b00df55))
+* Firestore Vector Store ([#7](https://github.com/googleapis/langchain-google-firestore-python/issues/7)) ([2845e97](https://github.com/googleapis/langchain-google-firestore-python/commit/2845e9700cf8904926898e972cfa94346ac7c626))
+
+
+### Bug Fixes
+
+* Update common.py ([#43](https://github.com/googleapis/langchain-google-firestore-python/issues/43)) ([96028f9](https://github.com/googleapis/langchain-google-firestore-python/commit/96028f94504841977a22f0297083507a949825c4))
+
 ## [0.1.2](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.1.1...v0.1.2) (2024-03-25)
 
 
