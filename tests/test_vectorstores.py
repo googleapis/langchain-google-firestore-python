@@ -21,8 +21,8 @@ from google.cloud.firestore_v1 import FieldFilter
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_core.documents import Document
 
+from langchain_google_firestore import FirestoreVectorStore
 from langchain_google_firestore.document_converter import DOC_REF, VECTOR
-from langchain_google_firestore.vectorstores import FirestoreVectorStore
 
 
 @pytest.fixture(scope="module", autouse=True, name="test_collection")
@@ -97,7 +97,10 @@ def test_firestore_add_vectors(
 
 
 def test_firestore_add_vectors_auto_id(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for adding vectors to FirestoreVectorStore.
@@ -122,7 +125,10 @@ def test_firestore_add_vectors_auto_id(
 
 
 def test_firestore_add_vectors_assertions(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     Tests assertions in FirestoreVectorStore.add_vectors method.
@@ -162,7 +168,10 @@ def test_firestore_add_vectors_assertions(
 
 
 def test_firestore_update_vectors(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for updating vectors in FirestoreVectorStore.
@@ -185,7 +194,10 @@ def test_firestore_update_vectors(
 
 
 def test_firestore_delete(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for deleting vectors in FirestoreVectorStore.
@@ -211,7 +223,10 @@ def test_firestore_delete(
 
 
 def test_firestore_similarity_search(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for similarity search in FirestoreVectorStore.
@@ -258,7 +273,9 @@ def test_firestore_similarity_search_with_filters(
 
     # Add vectors to Firestore
     firestore_store.add_texts(
-        ["test1", "test2"], ids=["1", "2"], metadatas=[{"foo": "bar"}, {"foo": "baz"}]
+        ["test1", "test2"],
+        ids=["1", "2"],
+        metadatas=[{"foo": "bar"}, {"foo": "baz"}],
     )
 
     # Get the vector of the first document for test assertions
@@ -290,7 +307,10 @@ def test_firestore_similarity_search_with_filters(
 
 
 def test_firestore_similarity_search_by_vector(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for similarity search in FirestoreVectorStore using a vector query.
@@ -314,7 +334,10 @@ def test_firestore_similarity_search_by_vector(
 
 
 def test_firestore_max_marginal_relevance(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for max marginal relevance in FirestoreVectorStore.
@@ -327,7 +350,8 @@ def test_firestore_max_marginal_relevance(
 
     # Add vectors to Firestore
     firestore_store.add_texts(
-        ["test1", "test2", "test3", "test4", "test5"], ids=["1", "2", "3", "4", "5"]
+        ["test1", "test2", "test3", "test4", "test5"],
+        ids=["1", "2", "3", "4", "5"],
     )
 
     # Perform max marginal relevance
@@ -338,7 +362,10 @@ def test_firestore_max_marginal_relevance(
 
 
 def test_firestore_max_marginal_relevance_by_vector(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for max marginal relevance in FirestoreVectorStore using a vector query.
@@ -351,7 +378,8 @@ def test_firestore_max_marginal_relevance_by_vector(
 
     # Add vectors to Firestore
     firestore_store.add_texts(
-        ["test1", "test2", "test3", "test4", "test5"], ids=["1", "2", "3", "4", "5"]
+        ["test1", "test2", "test3", "test4", "test5"],
+        ids=["1", "2", "3", "4", "5"],
     )
 
     # Perform max marginal relevance
@@ -364,7 +392,10 @@ def test_firestore_max_marginal_relevance_by_vector(
 
 
 def test_firestore_from_texts(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore from texts.
@@ -387,7 +418,10 @@ def test_firestore_from_texts(
 
 
 def test_firestore_from_documents(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore from Documents.
@@ -414,7 +448,10 @@ def test_firestore_from_documents(
 
 @pytest.mark.asyncio
 async def test_firestore_from_documents_async(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore from Documents asynchronously.
@@ -439,7 +476,10 @@ async def test_firestore_from_documents_async(
 
 @pytest.mark.asyncio
 async def test_firestore_from_texts_async(
-    test_case: TestCase, test_collection: str, client, embeddings: FakeEmbeddings
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
 ):
     """
     An end-to-end test for initializing FirestoreVectorStore asynchronously.
