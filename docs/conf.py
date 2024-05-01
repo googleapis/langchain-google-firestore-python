@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# langchain-google-cloud-sql-mysql documentation build configuration file
+# langchain-google-firestore documentation build configuration file
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -80,7 +80,7 @@ source_suffix = [".rst", ".md"]
 root_doc = "index"
 
 # General information about the project.
-project = "langchain-google-cloud-sql-mysql"
+project = "langchain-google-firestore"
 copyright = "2024, Google"
 author = "Google APIs"
 
@@ -154,9 +154,9 @@ html_theme = "alabaster"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "description": "Google Cloud Client Libraries for langchain-google-cloud-sql-mysql",
+    "description": "Google Cloud Client Libraries for langchain-google-firestore",
     "github_user": "googleapis",
-    "github_repo": "langchain-google-cloud-sql-mysql-python",
+    "github_repo": "langchain-google-firestore-python",
     "github_banner": True,
     "font_family": "'Roboto', Georgia, sans",
     "head_font_family": "'Roboto', Georgia, serif",
@@ -248,7 +248,7 @@ html_static_path = ["_static"]
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "langchain-google-cloud-sql-mysql-doc"
+htmlhelp_basename = "langchain-google-firestore-doc"
 
 # -- Options for warnings ------------------------------------------------------
 
@@ -281,8 +281,8 @@ latex_elements = {
 latex_documents = [
     (
         root_doc,
-        "langchain-google-cloud-sql-mysql.tex",
-        "langchain-google-cloud-sql-mysql Documentation",
+        "langchain-google-firestore.tex",
+        "langchain-google-firestore Documentation",
         author,
         "manual",
     )
@@ -316,8 +316,8 @@ latex_documents = [
 man_pages = [
     (
         root_doc,
-        "langchain-google-cloud-sql-mysql",
-        "langchain-google-cloud-sql-mysql Documentation",
+        "langchain-google-firestore",
+        "langchain-google-firestore Documentation",
         [author],
         1,
     )
@@ -335,11 +335,11 @@ man_pages = [
 texinfo_documents = [
     (
         root_doc,
-        "langchain-google-cloud-sql-mysql",
-        "langchain-google-cloud-sql-mysql Documentation",
+        "langchain-google-firestore",
+        "langchain-google-firestore Documentation",
         author,
-        "langchain-google-cloud-sql-mysql",
-        "langchain-google-cloud-sql-mysql Library",
+        "langchain-google-firestore",
+        "langchain-google-firestore Library",
         "APIs",
     )
 ]
