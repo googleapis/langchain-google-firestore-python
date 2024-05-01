@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.2.0...v0.2.1) (2024-05-01)
+
+
+### Documentation
+
+* Add API reference docs ([#61](https://github.com/googleapis/langchain-google-firestore-python/issues/61)) ([93d63d9](https://github.com/googleapis/langchain-google-firestore-python/commit/93d63d928c265b466a3feaf78c55a485cd472365))
+* Add FirestoreVectorStore usage to README ([#48](https://github.com/googleapis/langchain-google-firestore-python/issues/48)) ([0cbe8ee](https://github.com/googleapis/langchain-google-firestore-python/commit/0cbe8ee9b767435cac805ca644b97c678dbe54b4))
+
 ## [0.2.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.1.2...v0.2.0) (2024-04-03)
 
 
