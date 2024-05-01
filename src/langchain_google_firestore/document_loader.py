@@ -50,6 +50,7 @@ class FirestoreLoader(BaseLoader):
         client: Client = None,
     ) -> None:
         """Document Loader for Google Cloud Firestore.
+
         Args:
             source: The source to load the documents. It can be an instance of Query,
                 CollectionGroup, DocumentReference or the single `/`-delimited path to
@@ -57,8 +58,8 @@ class FirestoreLoader(BaseLoader):
             page_content_fields: The document field names to write into the `page_content`.
                 If an empty or None list is provided all fields will be written into
                 `page_content`. When only one field is provided only the value is written.
-            metadata_fields: The document field names to write into the `metadata`.
-                By default it will write all fields that are not in `page_content` into `metadata`.
+            metadata_fields: The document field names to write into the `metadata`. By default
+                it will write all fields that are not in `page_content`into `metadata`.
             client: Client for interacting with the Google Cloud Firestore API.
         """
         self.client = client_with_user_agent(USER_AGENT_LOADER, client)
@@ -102,9 +103,10 @@ class FirestoreSaver:
         client: Optional[Client] = None,
     ) -> None:
         """Document Saver for Google Cloud Firestore.
+
         Args:
-            collection: The single `/`-delimited path to a Firestore collection. If this
-              value is present it will write documents with an auto generated id.
+            collection: The single `/`-delimited path to a Firestore collection. If
+                this value is present it will write documents with an auto generated id.
             client: Client for interacting with the Google Cloud Firestore API.
         """
         self.collection = collection
@@ -117,12 +119,14 @@ class FirestoreSaver:
         document_ids: Optional[List[str]] = None,
     ) -> None:
         """Create / merge documents into the Firestore database.
+
         Args:
-         documents: List of documents to be written into Firestore.
-         merge: To merge data with an existing document (creating if the document does
-          not exist).
-         document_ids: List of document ids to be used. By default it will try to
-          construct the document paths using the `reference` from the Document.
+            documents: List of documents to be written into Firestore.
+            merge: To merge data with an existing document (creating if
+                the document does not exist).
+            document_ids: List of document ids to be used. By default it
+                will try to construct the document paths using the `reference`
+                from the Document.
         """
         db_batch = self.client.batch()
 
@@ -163,11 +167,13 @@ class FirestoreSaver:
         document_ids: Optional[List[str]] = None,
     ) -> None:
         """Delete documents from the Firestore database.
+
         Args:
-          documents: List of documents to be deleted from Firestore. It will try to extract
-            the {document_path} from the `reference` in the document metadata.
-          document_ids: List of documents ids to be deleted from Firestore. If provided
-            the `documents` argument will be ignored.
+            documents: List of documents to be deleted from Firestore.
+                It will try to extract the {document_path} from the `reference`
+                in the document metadata.
+            document_ids: List of documents ids to be deleted from Firestore.
+                If provided the `documents` argument will be ignored.
 
         """
         db_batch = self.client.batch()

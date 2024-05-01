@@ -39,6 +39,7 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         client: Optional[Client] = None,
     ) -> None:
         """Chat Message History for Google Cloud Firestore.
+
         Args:
             session_id: Arbitrary key that is used to store the messages of a single
                 chat session. This is the document_path of a document.
