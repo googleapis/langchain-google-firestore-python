@@ -2,7 +2,7 @@
 name = "langchain-google-firestore"
 dynamic = ["version"]
 description = "LangChain integrations for Google Cloud Firestore"
-readme = "README.md"
+readme = "README.rst"
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
 authors = [
@@ -13,6 +13,17 @@ dependencies = [
     "langchain-community>=0.0.18, <1.0.0",
     "google-cloud-firestore>=2.16.0, <3.0.0",
     "more_itertools>=10.2.0, <11.0.0"
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 [tool.setuptools.dynamic]
@@ -43,6 +54,11 @@ profile = "black"
 [tool.mypy]
 python_version = "3.11"
 warn_unused_configs = true
+
+exclude = [
+    'docs/*',
+    'noxfile.py'
+]
 
 [[tool.mypy.overrides]]
 module = "google.cloud.*"
