@@ -85,7 +85,7 @@ Use a vector store to store embedded data and perform vector search.
 
 See the full `Vector Store`_ tutorial.
 
-.. _`Vector Store`: https://github.com/googleapis/langchain-google-firestore-python/blob/main/docs/vector_store.ipynb
+.. _`Vector Store`: https://github.com/googleapis/langchain-google-firestore-python/blob/main/docs/vectorstores.ipynb
 
 Document Loader Usage
 ~~~~~~~~~~~~~~~~~~~~~
