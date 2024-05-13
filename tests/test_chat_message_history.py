@@ -54,7 +54,9 @@ def test_firestore_history_workflow(test_case: TestCase) -> None:
 def test_firestore_without_encoding_workflow(test_case: TestCase) -> None:
     session_id = uuid.uuid4().hex
     chat_history = FirestoreChatMessageHistory(
-        session_id=session_id, collection="HistoryWorkflow", encode_message=False,
+        session_id=session_id,
+        collection="HistoryWorkflow",
+        encode_message=False,
     )
     chat_history.add_user_message("User message")
 
