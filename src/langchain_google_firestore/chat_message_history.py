@@ -60,10 +60,9 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         if doc.exists:
             data_messages = doc.to_dict()
             if "messages" in data_messages:
-                if self.encode_message:
-                    self.messages = decode_messages(data_messages["messages"])
-                else:
-                    self.messages = data_messages["messages"]
+                self.messages = convert_messages_to_langchain(
+                    self.encode_message, data_messages["messages"]
+                )
 
     def add_message(self, message: BaseMessage) -> None:
         self.messages.append(message)
@@ -73,7 +72,7 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         if self.encode_message:
             self.doc_ref.set({"messages": encode_messages(self.messages)})
         else:
-            self.doc_ref.set({"messages": self.messages})
+            self.doc_ref.set({"messages": [m.json() for m in self.messages]})
 
     def clear(self) -> None:
         self.messages = []
@@ -84,6 +83,11 @@ def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
     return [str.encode(m.json()) for m in messages]
 
 
-def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
-    dict_messages = [json.loads(m.decode()) for m in messages]
+def convert_messages_to_langchain(
+    is_encoded: bool, messages: List[bytes]
+) -> List[BaseMessage]:
+    if is_encoded:
+        dict_messages = [json.loads(m.decode()) for m in messages]
+    else:
+        dict_messages = [json.loads(m) for m in messages]
     return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])
