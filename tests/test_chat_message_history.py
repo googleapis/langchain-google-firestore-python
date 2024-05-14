@@ -51,6 +51,28 @@ def test_firestore_history_workflow(test_case: TestCase) -> None:
     assert len(chat_history.messages) == 0
 
 
+def test_firestore_without_encoding_workflow(test_case: TestCase) -> None:
+    session_id = uuid.uuid4().hex
+    chat_history = FirestoreChatMessageHistory(
+        session_id=session_id,
+        collection="HistoryWorkflow",
+        encode_message=False,
+    )
+    chat_history.add_user_message("User message")
+
+    expected_messages = [
+        HumanMessage(content="User message"),
+    ]
+    chat_history._load_messages()
+
+    test_case.assertCountEqual(expected_messages, chat_history.messages)
+
+    chat_history.clear()
+    chat_history._load_messages()
+
+    assert len(chat_history.messages) == 0
+
+
 def test_firestore_load_messages(test_case: TestCase) -> None:
     NUM_MESSAGES = 25
     session_id = uuid.uuid4().hex

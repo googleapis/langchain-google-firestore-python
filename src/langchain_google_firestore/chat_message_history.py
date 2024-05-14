@@ -37,6 +37,7 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         session_id: str,
         collection: str = DEFAULT_COLLECTION,
         client: Optional[Client] = None,
+        encode_message: bool = True,
     ) -> None:
         """Chat Message History for Google Cloud Firestore.
 
@@ -45,7 +46,9 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
                 chat session. This is the document_path of a document.
             collection: The single `/`-delimited path to a Firestore collection.
             client: Client for interacting with the Google Cloud Firestore API.
+            encode_message: Encode the message when storing into Firestore.
         """
+        self.encode_message = encode_message
         self.client = client_with_user_agent(USER_AGENT, client)
         self.session_id = session_id
         self.doc_ref = self.client.collection(collection).document(session_id)
@@ -57,14 +60,19 @@ class FirestoreChatMessageHistory(BaseChatMessageHistory):
         if doc.exists:
             data_messages = doc.to_dict()
             if "messages" in data_messages:
-                self.messages = decode_messages(data_messages["messages"])
+                self.messages = convert_messages_to_langchain(
+                    self.encode_message, data_messages["messages"]
+                )
 
     def add_message(self, message: BaseMessage) -> None:
         self.messages.append(message)
         self._upsert_messages()
 
     def _upsert_messages(self) -> None:
-        self.doc_ref.set({"messages": encode_messages(self.messages)})
+        if self.encode_message:
+            self.doc_ref.set({"messages": encode_messages(self.messages)})
+        else:
+            self.doc_ref.set({"messages": [m.json() for m in self.messages]})
 
     def clear(self) -> None:
         self.messages = []
@@ -75,6 +83,11 @@ def encode_messages(messages: List[BaseMessage]) -> List[bytes]:
     return [str.encode(m.json()) for m in messages]
 
 
-def decode_messages(messages: List[bytes]) -> List[BaseMessage]:
-    dict_messages = [json.loads(m.decode()) for m in messages]
+def convert_messages_to_langchain(
+    is_encoded: bool, messages: List[bytes]
+) -> List[BaseMessage]:
+    if is_encoded:
+        dict_messages = [json.loads(m.decode()) for m in messages]
+    else:
+        dict_messages = [json.loads(m) for m in messages]
     return messages_from_dict([{"type": m["type"], "data": m} for m in dict_messages])
