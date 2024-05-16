@@ -53,7 +53,7 @@ substitutions:
   _VERSION: "3.8"
 ```
 
-Use `gcloud builds triggers import --source=trigger.yaml` create triggers via the command line
+Use `gcloud builds triggers import --source=trigger.yaml` to create triggers via the command line
 
 #### Project Setup
 
