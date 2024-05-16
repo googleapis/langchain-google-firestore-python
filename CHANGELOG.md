@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.2.1...v0.3.0) (2024-05-16)
+
+
+### Features
+
+* Optional message encoding. ([#65](https://github.com/googleapis/langchain-google-firestore-python/issues/65)) ([9b10d7a](https://github.com/googleapis/langchain-google-firestore-python/commit/9b10d7abb0d6009ca9997ce25a162d7a42065188))
+
+
+### Bug Fixes
+
+* Fix broken link in README.rst ([#63](https://github.com/googleapis/langchain-google-firestore-python/issues/63)) ([27c361c](https://github.com/googleapis/langchain-google-firestore-python/commit/27c361c2551479f7def81cb182c7fe29534c07a7))
+
 ## [0.2.1](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.2.0...v0.2.1) (2024-05-01)
 
 
