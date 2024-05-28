@@ -59,7 +59,7 @@ class FirestoreVectorStore(VectorStore):
         Args:
             source (CollectionReference | str): The source collection or document
             reference to store the data.
-            embedding (Embeddings): The embeddings to use for the vector store.
+            embedding_service (Embeddings): The embeddings to use for the vector store.
             client (Optional[Client]): The Firestore client to use. If not provided,
             a new client will be created.
             content_field (str): The field name to store the content data.
