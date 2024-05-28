@@ -57,7 +57,7 @@ class FirestoreVectorStore(VectorStore):
         """Constructor for FirestoreVectorStore.
 
         Args:
-            source (CollectionReference | str): The source collection or document
+            collection (CollectionReference | str): The source collection or document
             reference to store the data.
             embedding_service (Embeddings): The embeddings to use for the vector store.
             client (Optional[Client]): The Firestore client to use. If not provided,
