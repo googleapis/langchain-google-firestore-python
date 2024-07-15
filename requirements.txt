@@ -1,4 +1,4 @@
-langchain-core==0.2.13
+langchain-core==0.2.15
 langchain-community==0.2.7
 google-cloud-firestore==2.16.1
 more-itertools==10.3.0
