@@ -93,11 +93,23 @@ class FirestoreRecordManager(RecordManager):
 
     def exists(self, keys: Sequence[str]) -> List[bool]:
         logger.info(f"Checking existence of {len(keys)} keys")
-        query = self.collection.where(filter=firestore.FieldFilter("namespace", "==", self.namespace))
-        query = query.where(filter=firestore.FieldFilter("key", "in", keys))
-        docs = query.get()
-        found_keys = set(doc.get("key") for doc in docs)
-        result = [key in found_keys for key in keys]
+        result = [False] * len(keys)
+        key_to_index = {key: i for i, key in enumerate(keys)}
+
+        # Process keys in batches of 30 for Firestore limit
+        for i in range(0, len(keys), 30):
+            batch = keys[i:i+30]
+            query = self.collection.where(
+                filter=firestore.FieldFilter("namespace", "==", self.namespace))
+            query = query.where(
+                filter=firestore.FieldFilter("key", "in", batch))
+            docs = query.get()
+
+            for doc in docs:
+                key = doc.get("key")
+                if key in key_to_index:
+                    result[key_to_index[key]] = True
+
         logger.info(f"Existence check complete. Found {sum(result)} records")
         return result
 
@@ -114,6 +126,32 @@ class FirestoreRecordManager(RecordManager):
         limit: Optional[int] = None,
     ) -> List[str]:
         logger.info("Listing records with filters")
+
+        all_keys = []
+
+        # If there are group_ids, process them in batches of 30 for Firestore limit
+        if group_ids:
+            for i in range(0, len(group_ids), 30):
+                batch_group_ids = group_ids[i:i+30]
+                keys = self._list_keys_batch(
+                    before, after, batch_group_ids, limit)
+                all_keys.extend(keys)
+                if limit and len(all_keys) >= limit:
+                    all_keys = all_keys[:limit]
+                    break
+        else:
+            all_keys = self._list_keys_batch(before, after, None, limit)
+
+        logger.info(f"Listed {len(all_keys)} records")
+        return all_keys
+
+    def _list_keys_batch(
+        self,
+        before: Optional[datetime.datetime],
+        after: Optional[datetime.datetime],
+        group_ids: Optional[Sequence[str]],
+        limit: Optional[int]
+    ) -> List[str]:
         query = self.collection.where(filter=firestore.FieldFilter("namespace", "==", self.namespace))
 
         if after:
