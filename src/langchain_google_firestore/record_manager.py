@@ -1,11 +1,28 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import datetime
 import logging
 from google.cloud import firestore
 from typing import List, Optional, Sequence, Dict
 from langchain_core.indexing import RecordManager
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 class FirestoreRecordManager(RecordManager):
     def __init__(
@@ -17,7 +34,9 @@ class FirestoreRecordManager(RecordManager):
         self.collection_name = collection_name
         self.db = firestore.Client()
         self.collection = self.db.collection(self.collection_name)
-        logger.info(f"Initialised FirestoreRecordManager with namespace: {namespace}, collection: {collection_name}")
+        logger.info(
+            f"Initialised FirestoreRecordManager with namespace: {namespace}, collection: {collection_name}"
+        )
 
     def create_schema(self) -> None:
         logger.info("Skipping schema creation (Firestore is schemaless)")
@@ -66,20 +85,21 @@ class FirestoreRecordManager(RecordManager):
                 num_added += 1
                 logger.info(f"Adding new record: {key}")
 
-            batch.set(doc_ref, {
-                "key": key,
-                "namespace": self.namespace,
-                "updated_at": current_time,
-                "group_id": group_id
-            }, merge=True)
+            batch.set(
+                doc_ref,
+                {
+                    "key": key,
+                    "namespace": self.namespace,
+                    "updated_at": current_time,
+                    "group_id": group_id,
+                },
+                merge=True,
+            )
 
         batch.commit()
         logger.info(f"Update complete. Updated: {num_updated}, Added: {num_added}")
 
-        return {
-            "num_updated": num_updated,
-            "num_added": num_added
-        }
+        return {"num_updated": num_updated, "num_added": num_added}
 
     async def aupdate(
         self,
@@ -98,11 +118,11 @@ class FirestoreRecordManager(RecordManager):
 
         # Process keys in batches of 30 for Firestore limit
         for i in range(0, len(keys), 30):
-            batch = keys[i:i+30]
+            batch = keys[i : i + 30]
             query = self.collection.where(
-                filter=firestore.FieldFilter("namespace", "==", self.namespace))
-            query = query.where(
-                filter=firestore.FieldFilter("key", "in", batch))
+                filter=firestore.FieldFilter("namespace", "==", self.namespace)
+            )
+            query = query.where(filter=firestore.FieldFilter("key", "in", batch))
             docs = query.get()
 
             for doc in docs:
@@ -132,9 +152,8 @@ class FirestoreRecordManager(RecordManager):
         # If there are group_ids, process them in batches of 30 for Firestore limit
         if group_ids:
             for i in range(0, len(group_ids), 30):
-                batch_group_ids = group_ids[i:i+30]
-                keys = self._list_keys_batch(
-                    before, after, batch_group_ids, limit)
+                batch_group_ids = group_ids[i : i + 30]
+                keys = self._list_keys_batch(before, after, batch_group_ids, limit)
                 all_keys.extend(keys)
                 if limit and len(all_keys) >= limit:
                     all_keys = all_keys[:limit]
@@ -150,9 +169,11 @@ class FirestoreRecordManager(RecordManager):
         before: Optional[datetime.datetime],
         after: Optional[datetime.datetime],
         group_ids: Optional[Sequence[str]],
-        limit: Optional[int]
+        limit: Optional[int],
     ) -> List[str]:
-        query = self.collection.where(filter=firestore.FieldFilter("namespace", "==", self.namespace))
+        query = self.collection.where(
+            filter=firestore.FieldFilter("namespace", "==", self.namespace)
+        )
 
         if after:
             query = query.where(filter=firestore.FieldFilter("updated_at", ">", after))
@@ -161,7 +182,9 @@ class FirestoreRecordManager(RecordManager):
             query = query.where(filter=firestore.FieldFilter("updated_at", "<", before))
             logger.debug(f"Filtering records before: {before}")
         if group_ids:
-            query = query.where(filter=firestore.FieldFilter("group_id", "in", group_ids))
+            query = query.where(
+                filter=firestore.FieldFilter("group_id", "in", group_ids)
+            )
             logger.debug(f"Filtering by group_ids: {group_ids}")
 
         if limit:
@@ -182,7 +205,9 @@ class FirestoreRecordManager(RecordManager):
         limit: Optional[int] = None,
     ) -> List[str]:
         logger.info("Calling synchronous list_keys method")
-        return self.list_keys(before=before, after=after, group_ids=group_ids, limit=limit)
+        return self.list_keys(
+            before=before, after=after, group_ids=group_ids, limit=limit
+        )
 
     def delete_keys(self, keys: Sequence[str]) -> Dict[str, int]:
         logger.info(f"Deleting {len(keys)} records")
