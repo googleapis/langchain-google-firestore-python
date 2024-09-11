@@ -63,7 +63,6 @@ class FirestoreRecordManager(RecordManager):
             logger.info(f"Updating all {len(keys)} records")
         else:
             logger.info(f"Updating {len(keys)} records")
-        if group_ids is None:
             group_ids = [None] * len(keys)
 
         batch = self.db.batch()
