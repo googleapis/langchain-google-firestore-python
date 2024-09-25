@@ -22,7 +22,7 @@ from typing import Any, Iterable, List, Optional, Type
 import more_itertools
 import numpy as np
 import requests
-from google.cloud import storage
+from google.cloud import storage  # type: ignore
 from google.cloud.firestore import (  # type: ignore
     Client,
     CollectionReference,
@@ -191,7 +191,7 @@ class FirestoreVectorStore(VectorStore):
             metadatas = [{"image_uri": uri} for uri in uris]
 
         image_encodings = [self._encode_image(uri) for uri in uris]
-        image_embeddings = self._images_embedding_helper(uris)
+        image_embeddings = self._images_embedding_helper(list(uris))
 
         _ids: List[str] = []
         db_batch = self.client.batch()
