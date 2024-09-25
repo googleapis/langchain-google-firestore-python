@@ -22,12 +22,12 @@ from typing import Any, Iterable, List, Optional, Type
 import more_itertools
 import numpy as np
 import requests
+from google.cloud import storage
 from google.cloud.firestore import (  # type: ignore
     Client,
     CollectionReference,
     DocumentSnapshot,
 )
-from google.cloud import storage
 from google.cloud.firestore_v1.base_query import BaseFilter  # type: ignore
 from google.cloud.firestore_v1.base_vector_query import DistanceMeasure  # type: ignore
 from google.cloud.firestore_v1.vector import Vector  # type: ignore
@@ -153,11 +153,11 @@ class FirestoreVectorStore(VectorStore):
         return _ids
 
     def add_images(
-            self,
-            uris: Iterable[str],
-            metadatas: Optional[List[dict]] = None,
-            ids: Optional[List[str]] = None,
-            **kwargs: Any,
+        self,
+        uris: Iterable[str],
+        metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        **kwargs: Any,
     ) -> List[str]:
         """Adds image embeddings to Firestore vector store.
 
@@ -308,11 +308,11 @@ class FirestoreVectorStore(VectorStore):
         ]
 
     def similarity_search_image(
-            self,
-            image_uri: str,
-            k: int = DEFAULT_TOP_K,
-            filters: Optional[BaseFilter] = None,
-            **kwargs: Any,
+        self,
+        image_uri: str,
+        k: int = DEFAULT_TOP_K,
+        filters: Optional[BaseFilter] = None,
+        **kwargs: Any,
     ) -> List[Document]:
         """Run image similarity search with Firestore.
 
@@ -329,9 +329,7 @@ class FirestoreVectorStore(VectorStore):
         """
 
         embedding = self._images_embedding_helper([image_uri])[0]
-        docs = self._similarity_search(
-            embedding, k, filters=filters
-        )
+        docs = self._similarity_search(embedding, k, filters=filters)
         return [
             convert_firestore_document(doc, page_content_fields=[self.content_field])
             for doc in docs
@@ -444,7 +442,7 @@ class FirestoreVectorStore(VectorStore):
             storage_client = storage.Client()
             bucket = storage_client.bucket(bucket_name)
             blob = bucket.blob(object_name)
-            return base64.b64encode(blob.download_as_bytes()).decode('utf-8')
+            return base64.b64encode(blob.download_as_bytes()).decode("utf-8")
 
         web_uri = re.match(r"^(https?://).*", uri)
         if web_uri:
@@ -456,13 +454,12 @@ class FirestoreVectorStore(VectorStore):
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     def _images_embedding_helper(self, image_uris: List[str]) -> List[List[float]]:
-
         if not hasattr(self.embedding_service, "embed_image"):
             raise ValueError(
                 "Please use an embedding model that supports embed_image method."
             )
 
-        method = getattr(self.embedding_service, 'embed_image')
+        method = getattr(self.embedding_service, "embed_image")
         signature = inspect.signature(method)
         parameters = list(signature.parameters.values())
         first_param = parameters[0]
