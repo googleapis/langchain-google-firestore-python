@@ -455,25 +455,40 @@ class FirestoreVectorStore(VectorStore):
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     def _images_embedding_helper(self, image_uris: List[str]) -> List[List[float]]:
-        if not hasattr(self.embedding_service, "embed_image"):
-            raise ValueError(
-                "Please use an embedding model that supports embed_image method."
-            )
+        # check if either `embed_images()` or `embed_image()` API is supported by the embedding service used
+        if hasattr(self.embedding_service, "embed_images"):
+            try:
+                embeddings = self.embedding_service.embed_images(image_uris)
+            except Exception as e:
+                raise Exception(
+                    f"Make sure your selected embedding model supports list of image URIs as input. {str(e)}"
+                )
+        elif hasattr(self.embedding_service, "embed_image"):
+            try:
+                # Handle embed_image() methods with a single image or a list of images
+                method = getattr(self.embedding_service, "embed_image")
+                signature = inspect.signature(method)
+                parameters = list(signature.parameters.values())
+                first_param = parameters[0]
 
-        method = getattr(self.embedding_service, "embed_image")
-        signature = inspect.signature(method)
-        parameters = list(signature.parameters.values())
-        first_param = parameters[0]
-
-        if first_param.annotation == List[str] or first_param.annotation == list:
-            embeddings = self.embedding_service.embed_image(image_uris)
-        elif first_param.annotation == str:
-            embeddings = [self.embedding_service.embed_image(uri) for uri in image_uris]
+                if (
+                    first_param.annotation == List[str]
+                    or first_param.annotation == list
+                ):
+                    embeddings = self.embedding_service.embed_image(image_uris)
+                elif first_param.annotation == str:
+                    embeddings = [
+                        self.embedding_service.embed_image(uri) for uri in image_uris
+                    ]
+            except Exception as e:
+                raise Exception(
+                    f"Make sure your selected embedding model supports a list of image URIs or a single image URI as "
+                    f"input. {str(e)}"
+                )
         else:
-            raise Exception(
-                f"Please use an embedding model that supports embed_image method."
+            raise ValueError(
+                "Please use an embedding model that supports image embedding."
             )
-
         return embeddings
 
     def _vector_to_list(self, vector: Vector) -> List[float]:
