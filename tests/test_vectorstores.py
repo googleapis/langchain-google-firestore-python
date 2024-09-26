@@ -196,10 +196,7 @@ def test_firestore_add_image_vectors(
     metadatas = [{"image_uri": image_uri1}, {"image_uri": image_uri2}]
 
     # Add vectors to Firestore
-    firestore_store.add_images(
-        image_paths,
-        ids=ids
-    )
+    firestore_store.add_images(image_paths, ids=ids)
 
     # Verify that the vectors were added to Firestore
     docs = firestore_store.collection.stream()
