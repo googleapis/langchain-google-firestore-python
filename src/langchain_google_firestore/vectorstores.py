@@ -190,26 +190,27 @@ class FirestoreVectorStore(VectorStore):
         if metadatas is None:
             metadatas = [{"image_uri": uri} for uri in uris]
 
-        image_encodings = [self._encode_image(uri) for uri in uris]
-        image_embeddings = self._images_embedding_helper(list(uris))
-
         _ids: List[str] = []
         db_batch = self.client.batch()
 
-        for i, uri in enumerate(uris):
-            doc_id = ids[i] if ids else None
-            doc = self.collection.document(doc_id)
-            _ids.append(doc.id)
+        for batch in more_itertools.chunked(uris, WRITE_BATCH_SIZE):
+            image_encodings = [self._encode_image(uri) for uri in batch]
+            image_embeddings = self._images_embedding_helper(list(batch))
+            for i, uri in enumerate(batch):
+                doc_id = ids[i] if ids else None
+                doc = self.collection.document(doc_id)
+                _ids.append(doc.id)
 
-            data = {
-                self.content_field: image_encodings[i],
-                self.embedding_field: Vector(image_embeddings[i]),
-                self.metadata_field: metadatas[i] if metadatas else None,
-            }
+                data = {
+                    self.content_field: image_encodings[i],
+                    self.embedding_field: Vector(image_embeddings[i]),
+                    self.metadata_field: metadatas[i] if metadatas else None,
+                }
 
-            db_batch.set(doc, data, merge=True)
+                db_batch.set(doc, data, merge=True)
 
-        db_batch.commit()
+            db_batch.commit()
+
         return _ids
 
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> None:

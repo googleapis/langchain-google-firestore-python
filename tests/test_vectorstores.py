@@ -188,22 +188,24 @@ def test_firestore_add_image_vectors(
         test_collection, image_embeddings, client=client
     )
 
-    image_name = "googlelogo_color_272x92dp.png"
-    image_uri = f"https://www.google.com/images/branding/googlelogo/1x/{image_name}"
-    image_paths = [image_uri]
-    metadatas = [{"image_uri": image_uri}]
+    image_uri1 = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png"
+    image_uri2 = "gs://github-repo/img/vision/google-cloud-next.jpeg"
+
+    image_paths = [image_uri1, image_uri2]
+    ids = ["1", "2"]
+    metadatas = [{"image_uri": image_uri1}, {"image_uri": image_uri2}]
 
     # Add vectors to Firestore
     firestore_store.add_images(
         image_paths,
-        ids=[image_name],
+        ids=ids
     )
 
     # Verify that the vectors were added to Firestore
     docs = firestore_store.collection.stream()
-    for doc, image_path, metadata in zip(docs, image_paths, metadatas):
+    for doc, _id, image_path, metadata in zip(docs, ids, image_paths, metadatas):
         data = doc.to_dict()
-        test_case.assertEqual(doc.id, image_name)
+        test_case.assertEqual(doc.id, _id)
         test_case.assertEqual(
             data["content"], firestore_store._encode_image(image_path)
         )
