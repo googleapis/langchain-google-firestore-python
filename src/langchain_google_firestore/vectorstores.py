@@ -35,7 +35,7 @@ from .common import client_with_user_agent
 from .document_converter import convert_firestore_document
 from .version import __version__
 
-USER_AGENT = "langchain-google-firestore-python:vectorstore" + __version__
+USER_AGENT = "langchain-google-firestore-python:vectorstore/" + __version__
 WRITE_BATCH_SIZE = 500
 DEFAULT_TOP_K = 4
 
