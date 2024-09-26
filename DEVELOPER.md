@@ -18,7 +18,13 @@ Learn more by reading [How should I write my commits?](https://github.com/google
 
 ### Run tests locally
 
-1. Run pytest to automatically run all tests:
+1. Before running tests, install `langchain_google_firestore` locally:
+
+    ```bash
+    pip install -e .
+    ```
+   
+2. Run pytest to automatically run all tests:
 
     ```bash
     pytest
