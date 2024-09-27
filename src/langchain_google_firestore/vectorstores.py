@@ -14,10 +14,15 @@
 
 from __future__ import annotations
 
+import base64
+import inspect
+import re
 from typing import Any, Iterable, List, Optional, Type
 
 import more_itertools
 import numpy as np
+import requests
+from google.cloud import storage  # type: ignore
 from google.cloud.firestore import (  # type: ignore
     Client,
     CollectionReference,
@@ -147,6 +152,72 @@ class FirestoreVectorStore(VectorStore):
 
         return _ids
 
+    def add_images(
+        self,
+        uris: Iterable[str],
+        metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        store_encodings: bool = True,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Adds image embeddings to Firestore vector store.
+
+        Args:
+            uris: A list of image uris (local, Google Cloud Storage or web)
+            metadatas: The metadata to add to the vector store. Defaults to None.
+            ids: The document ids to use for the new documents. If not provided, new
+            document ids will be generated.
+            store_encoding: Whether to store base64 encoding of the image as content.
+            Set to false for large images to avoid Firebase document limits.
+
+        Returns:
+            List[str]: The list of document ids added to the vector store.
+        """
+        images_len = len(list(uris))
+        ids_len_match = not ids or len(ids) == images_len
+        metadatas_len_match = not metadatas or len(metadatas) == images_len
+
+        if images_len == 0:
+            raise ValueError("No images provided to add to the vector store.")
+
+        if not metadatas_len_match:
+            raise ValueError(
+                "The length of metadatas must be the same as the length of images or zero."
+            )
+
+        if not ids_len_match:
+            raise ValueError(
+                "The length of ids must be the same as the length of images or zero."
+            )
+
+        if metadatas is None:
+            metadatas = [{"image_uri": uri} for uri in uris]
+
+        _ids: List[str] = []
+        db_batch = self.client.batch()
+
+        for batch in more_itertools.chunked(uris, WRITE_BATCH_SIZE):
+            image_embeddings = self._images_embedding_helper(list(batch))
+            for i, uri in enumerate(batch):
+                doc_id = ids[i] if ids else None
+                doc = self.collection.document(doc_id)
+                _ids.append(doc.id)
+
+                data = {
+                    self.content_field: (
+                        self._encode_image(uri) if store_encodings else ""
+                    ),
+                    self.embedding_field: Vector(image_embeddings[i]),
+                    self.metadata_field: metadatas[i] if metadatas else None,
+                }
+
+                db_batch.set(doc, data, merge=True)
+
+            # Increase timeout to 90 seconds for large images
+            db_batch.commit(timeout=90)
+
+        return _ids
+
     def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> None:
         """Delete documents from the vector store.
 
@@ -236,6 +307,34 @@ class FirestoreVectorStore(VectorStore):
             List[Document]: List of documents most similar to the query vector.
         """
 
+        docs = self._similarity_search(embedding, k, filters=filters)
+        return [
+            convert_firestore_document(doc, page_content_fields=[self.content_field])
+            for doc in docs
+        ]
+
+    def similarity_search_image(
+        self,
+        image_uri: str,
+        k: int = DEFAULT_TOP_K,
+        filters: Optional[BaseFilter] = None,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """Run image similarity search with Firestore.
+
+        Raises:
+            FailedPrecondition: If the index is not created.
+
+        Args:
+            image_uri: The image uri.
+            k: The number of documents to return. Defaults to 4.
+            filters: The pre-filter to apply to the query. Defaults to None.
+
+        Returns:
+            List[Document]: List of documents most similar to the image.
+        """
+
+        embedding = self._images_embedding_helper([image_uri])[0]
         docs = self._similarity_search(embedding, k, filters=filters)
         return [
             convert_firestore_document(doc, page_content_fields=[self.content_field])
@@ -340,6 +439,62 @@ class FirestoreVectorStore(VectorStore):
         vs_obj = cls(collection=collection, embedding_service=embedding, **kwargs)
         vs_obj.add_texts(texts, metadatas, ids, **kwargs)
         return vs_obj
+
+    def _encode_image(self, uri: str) -> str:
+        """Get base64 string from a image URI."""
+        gcs_uri = re.match("gs://(.*?)/(.*)", uri)
+        if gcs_uri:
+            bucket_name, object_name = gcs_uri.groups()
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(object_name)
+            return base64.b64encode(blob.download_as_bytes()).decode("utf-8")
+
+        web_uri = re.match(r"^(https?://).*", uri)
+        if web_uri:
+            response = requests.get(uri, stream=True)
+            response.raise_for_status()
+            return base64.b64encode(response.content).decode("utf-8")
+
+        with open(uri, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
+    def _images_embedding_helper(self, image_uris: List[str]) -> List[List[float]]:
+        # check if either `embed_images()` or `embed_image()` API is supported by the embedding service used
+        if hasattr(self.embedding_service, "embed_images"):
+            try:
+                embeddings = self.embedding_service.embed_images(image_uris)
+            except Exception as e:
+                raise Exception(
+                    f"Make sure your selected embedding model supports list of image URIs as input. {str(e)}"
+                )
+        elif hasattr(self.embedding_service, "embed_image"):
+            try:
+                # Handle embed_image() methods with a single image or a list of images
+                method = getattr(self.embedding_service, "embed_image")
+                signature = inspect.signature(method)
+                parameters = list(signature.parameters.values())
+                first_param = parameters[0]
+
+                if (
+                    first_param.annotation == List[str]
+                    or first_param.annotation == list
+                ):
+                    embeddings = self.embedding_service.embed_image(image_uris)
+                elif first_param.annotation == str:
+                    embeddings = [
+                        self.embedding_service.embed_image(uri) for uri in image_uris
+                    ]
+            except Exception as e:
+                raise Exception(
+                    f"Make sure your selected embedding model supports a list of image URIs or a single image URI as "
+                    f"input. {str(e)}"
+                )
+        else:
+            raise ValueError(
+                "Please use an embedding model that supports image embedding."
+            )
+        return embeddings
 
     def _vector_to_list(self, vector: Vector) -> List[float]:
         return vector.to_map_value()["value"]

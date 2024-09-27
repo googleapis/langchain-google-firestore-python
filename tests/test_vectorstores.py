@@ -16,6 +16,7 @@ import sys
 from unittest import TestCase
 
 import pytest
+from fake import FakeImageEmbeddings
 from google.cloud import firestore
 from google.cloud.firestore_v1 import FieldFilter
 from langchain_community.embeddings import FakeEmbeddings
@@ -42,6 +43,12 @@ def init_test_case() -> TestCase:
 def get_embeddings():
     """Returns a FakeEmbeddings instance with a size of 100."""
     return FakeEmbeddings(size=100)
+
+
+@pytest.fixture(scope="module", autouse=True, name="image_embeddings")
+def get_image_embeddings():
+    """Returns a FakeImageEmbeddings instance with a size of 100."""
+    return FakeImageEmbeddings(size=1408)
 
 
 @pytest.fixture(scope="module", autouse=True, name="client")
@@ -165,6 +172,72 @@ def test_firestore_add_vectors_assertions(
         firestore_store.add_texts,
         [],
     )
+
+
+def test_firestore_add_image_vectors(
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    image_embeddings: FakeImageEmbeddings,
+):
+    """
+    An end-to-end test for adding image vectors to FirestoreVectorStore.
+    """
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(
+        test_collection, image_embeddings, client=client
+    )
+
+    image_uri1 = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png"
+    image_uri2 = "gs://github-repo/img/vision/google-cloud-next.jpeg"
+
+    image_paths = [image_uri1, image_uri2]
+    ids = ["1", "2"]
+    metadatas = [{"image_uri": image_uri1}, {"image_uri": image_uri2}]
+
+    # Add vectors to Firestore
+    firestore_store.add_images(image_paths, ids=ids)
+
+    # Verify that the vectors were added to Firestore
+    docs = firestore_store.collection.stream()
+    for doc, _id, image_path, metadata in zip(docs, ids, image_paths, metadatas):
+        data = doc.to_dict()
+        test_case.assertEqual(doc.id, _id)
+        test_case.assertEqual(
+            data["content"], firestore_store._encode_image(image_path)
+        )
+        test_case.assertEqual(data["metadata"], metadata)
+
+
+def test_firestore_add_image_vectors_store_encodings_false(
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    image_embeddings: FakeImageEmbeddings,
+):
+    """
+    A test for adding image vectors to FirestoreVectorStore without storing base64 encoding.
+    """
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(
+        test_collection, image_embeddings, client=client
+    )
+
+    # Use an image whose base64 encoding is too large to store to Firestore
+    image_uri = "gs://cloud-samples-data/vertex-ai/llm/prompts/landmark1.png"
+    ids = ["1"]
+    metadatas = [{"image_uri": image_uri}]
+
+    # Add vectors to Firestore without storing the base64 encoding
+    firestore_store.add_images([image_uri], ids=ids, store_encodings=False)
+
+    # Verify that the vectors were added to Firestore and the content is empty
+    docs = firestore_store.collection.stream()
+    for doc, _id, metadata in zip(docs, ids, metadatas):
+        data = doc.to_dict()
+        test_case.assertEqual(doc.id, _id)
+        test_case.assertEqual(data["metadata"], metadata)
+        test_case.assertEqual(data["content"], "")
 
 
 def test_firestore_update_vectors(
@@ -328,6 +401,36 @@ def test_firestore_similarity_search_by_vector(
     results = firestore_store.similarity_search_by_vector(
         embeddings.embed_query("test1"), k
     )
+
+    # Verify that the search results are as expected
+    test_case.assertEqual(len(results), k)
+
+
+def test_firestore_image_similarity_search(
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    image_embeddings: FakeImageEmbeddings,
+):
+    """
+    An end-to-end test for image similarity search in FirestoreVectorStore.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(
+        test_collection, image_embeddings, client=client
+    )
+
+    k = 1
+
+    image_name = "googlelogo_color_272x92dp.png"
+    image_uri = f"https://www.google.com/images/branding/googlelogo/1x/{image_name}"
+
+    # Add vectors to Firestore
+    firestore_store.add_images([image_uri])
+
+    # Perform image similarity search
+    results = firestore_store.similarity_search_image(image_uri, k)
 
     # Verify that the search results are as expected
     test_case.assertEqual(len(results), k)
