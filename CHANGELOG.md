@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.3.0...v0.4.0) (2024-09-27)
+
+
+### Features
+
+* Added image support to FirestoreVectorStore along with basic tests ([#97](https://github.com/googleapis/langchain-google-firestore-python/issues/97)) ([b8fc685](https://github.com/googleapis/langchain-google-firestore-python/commit/b8fc6853201b17523f78e3491073293df9127a38))
+
+
+### Bug Fixes
+
+* Vectorstore user agent ([#98](https://github.com/googleapis/langchain-google-firestore-python/issues/98)) ([765232c](https://github.com/googleapis/langchain-google-firestore-python/commit/765232cb5278079bf106e570b40b889931429193))
+
+
+### Documentation
+
+* Update README.rst title size ([#88](https://github.com/googleapis/langchain-google-firestore-python/issues/88)) ([36ed233](https://github.com/googleapis/langchain-google-firestore-python/commit/36ed2339130c247159d8b88e4b4aabbe775021b8))
+
 ## [0.3.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.2.1...v0.3.0) (2024-05-16)
 
 
