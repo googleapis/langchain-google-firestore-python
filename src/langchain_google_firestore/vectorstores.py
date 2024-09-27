@@ -157,6 +157,7 @@ class FirestoreVectorStore(VectorStore):
         uris: Iterable[str],
         metadatas: Optional[List[dict]] = None,
         ids: Optional[List[str]] = None,
+        store_encodings: bool = True,
         **kwargs: Any,
     ) -> List[str]:
         """Adds image embeddings to Firestore vector store.
@@ -166,6 +167,8 @@ class FirestoreVectorStore(VectorStore):
             metadatas: The metadata to add to the vector store. Defaults to None.
             ids: The document ids to use for the new documents. If not provided, new
             document ids will be generated.
+            store_encoding: Whether to store base64 encoding of the image as content.
+            Set to false for large images to avoid Firebase document limits.
 
         Returns:
             List[str]: The list of document ids added to the vector store.
@@ -194,7 +197,6 @@ class FirestoreVectorStore(VectorStore):
         db_batch = self.client.batch()
 
         for batch in more_itertools.chunked(uris, WRITE_BATCH_SIZE):
-            image_encodings = [self._encode_image(uri) for uri in batch]
             image_embeddings = self._images_embedding_helper(list(batch))
             for i, uri in enumerate(batch):
                 doc_id = ids[i] if ids else None
@@ -202,14 +204,17 @@ class FirestoreVectorStore(VectorStore):
                 _ids.append(doc.id)
 
                 data = {
-                    self.content_field: image_encodings[i],
+                    self.content_field: (
+                        self._encode_image(uri) if store_encodings else ""
+                    ),
                     self.embedding_field: Vector(image_embeddings[i]),
                     self.metadata_field: metadatas[i] if metadatas else None,
                 }
 
                 db_batch.set(doc, data, merge=True)
 
-            db_batch.commit()
+            # Increase timeout to 90 seconds for large images
+            db_batch.commit(timeout=90)
 
         return _ids
 
