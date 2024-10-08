@@ -30,6 +30,9 @@ DOC_REF = "document_reference"
 GEOPOINT = "geopoint"
 VECTOR = "vector"
 
+DEFAULT_METADATA_COLUMN_NAME = "reference"  # document metadata
+DEFAULT_CONTENT_COLUMN_NAME = "page_content"  # text content, do not rename
+
 
 def convert_firestore_document(
     document: DocumentSnapshot,
