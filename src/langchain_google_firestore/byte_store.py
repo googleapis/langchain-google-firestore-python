@@ -12,35 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
 from typing import List
-from unittest import TestCase
-import sys
 
-import pytest
-from google.cloud import firestore  # type: ignore
 from langchain_core.documents import Document
 
 # from langchain_google_firestore import FirestoreStore
-from typing import Any, Iterator, List, Optional, Sequence, Tuple, cast
-
-import json
-
-from langchain.retrievers import ParentDocumentRetriever
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.stores import ByteStore
-from langchain_community.embeddings import FakeEmbeddings
-from langchain_core.documents import Document
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_google_firestore.document_converter import DOC_REF, VECTOR
-
-
-from typing import Any, Iterator, List, Optional, Sequence, Tuple, cast, Union
+from typing import Any, Iterator, Optional, Sequence, Tuple
 
 import json
 
 from langchain_core.stores import ByteStore
-from langchain_core.documents import Document
+
+
+from typing import Union
+
+
 
 
 class FirestoreStore(ByteStore):
