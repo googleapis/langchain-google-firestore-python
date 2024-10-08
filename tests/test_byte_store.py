@@ -26,12 +26,6 @@ from langchain_core.vectorstores import InMemoryVectorStore
 
 from langchain_google_firestore import FirestoreStore
 
-@pytest.fixture(scope="module", autouse=True, name="test_collection")
-def test_collection_id():
-    # Get current Python version
-    python_version = f"{sys.version_info.major}{sys.version_info.minor}"
-    return f"test_collection_{python_version}"
-
 
 @pytest.fixture(autouse=True, name="test_case")
 def init_test_case() -> TestCase:
@@ -44,6 +38,7 @@ def get_embeddings():
     """Returns a FakeEmbeddings instance with a size of 100."""
     return FakeEmbeddings(size=100)
 
+
 @pytest.fixture(scope="module", autouse=True, name="client")
 def firestore_client():
     """Returns a Firestore client."""
@@ -52,7 +47,6 @@ def firestore_client():
 
 def test_firestore_store_parent_document_retriever(
     test_case: TestCase,
-    test_collection: str,
     client: firestore.Client,
     embeddings: FakeEmbeddings,
 ):
@@ -67,7 +61,7 @@ def test_firestore_store_parent_document_retriever(
     )
 
     # Create FirestoreVectorStore instance
-    vector_store = InMemoryVectorStore(FakeEmbeddings(size=100))
+    vector_store = InMemoryVectorStore(embeddings)
 
     # This text splitter is used to create the child documents
     child_splitter = RecursiveCharacterTextSplitter(chunk_size=1, chunk_overlap=0)
@@ -107,9 +101,11 @@ def test_firestore_store_parent_document_retriever(
     test_case.assertEqual(keys, expected_keys)
 
 
-def test_firestore_store_workflow(test_case: TestCase) -> None:
+def test_firestore_store_workflow(
+    test_case: TestCase,
+    client: firestore.Client,
+):
     collection_name = "FirestoreStoreTestWorkflow"
-    client = firestore.Client()
     store = FirestoreStore(
         client=client,
         collection_name=collection_name
@@ -140,9 +136,11 @@ def test_firestore_store_workflow(test_case: TestCase) -> None:
     test_case.assertEqual(values_after_clear, [None, None])
 
 
-def test_firestore_store_workflow_with_documents(test_case: TestCase) -> None:
+def test_firestore_store_workflow_with_documents(
+    test_case: TestCase,
+    client: firestore.Client,
+):
     collection_name = "FirestoreStoreTestWorkflow"
-    client = firestore.Client()
     store = FirestoreStore(
         client=client,
         collection_name=collection_name
@@ -189,9 +187,11 @@ def test_firestore_store_workflow_with_documents(test_case: TestCase) -> None:
     test_case.assertEqual(values_after_clear, [None, None, None, None])
 
 
-def test_firestore_store_custom_client(test_case: TestCase) -> None:
+def test_firestore_store_custom_client(
+    test_case: TestCase,
+    client: firestore.Client,
+):
     collection_name = "FirestoreStoreTestCustomClient"
-    client = firestore.Client()
     store = FirestoreStore(
         client=client,
         collection_name=collection_name
@@ -211,9 +211,11 @@ def test_firestore_store_custom_client(test_case: TestCase) -> None:
     expected_keys = []
     test_case.assertEqual(keys, expected_keys)
 
-def test_firestore_store_yield_keys(test_case: TestCase) -> None:
+def test_firestore_store_yield_keys(
+    test_case: TestCase,
+    client: firestore.Client,
+):
     collection_name = "FirestoreStoreTestYieldKeys"
-    client = firestore.Client()
     store = FirestoreStore(
         client=client,
         collection_name=collection_name
@@ -240,9 +242,11 @@ def test_firestore_store_yield_keys(test_case: TestCase) -> None:
     test_case.assertEqual(keys, expected_keys)
 
 
-def test_firestore_store_large_number_of_keys(test_case: TestCase) -> None:
+def test_firestore_store_large_number_of_keys(
+    test_case: TestCase,
+    client: firestore.Client,
+):
     collection_name = "FirestoreStoreTestLargeKeys"
-    client = firestore.Client()
     store = FirestoreStore(
         client=client,
         collection_name=collection_name
