@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.4.0...v0.4.1) (2024-10-25)
+
+
+### Documentation
+
+* Add documentation on add_images method ([79c1937](https://github.com/googleapis/langchain-google-firestore-python/commit/79c19379985f7474b92766ee7f22386e772c2747))
+
 ## [0.4.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.3.0...v0.4.0) (2024-09-27)
 
 
