@@ -15,6 +15,7 @@
 from .chat_message_history import FirestoreChatMessageHistory
 from .document_loader import FirestoreLoader, FirestoreSaver
 from .vectorstores import FirestoreVectorStore
+from .byte_store import FirestoreStore
 from .version import __version__
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     "FirestoreLoader",
     "FirestoreSaver",
     "FirestoreVectorStore",
+    "FirestoreStore",
     "__version__",
 ]
