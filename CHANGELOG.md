@@ -3,15 +3,13 @@
 ## [0.5.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.4.0...v0.5.0) (2024-10-29)
 
 
+### ⚠ BREAKING CHANGES
+
+* Change store_encodings flag to False in add_images method [#108](https://github.com/googleapis/langchain-google-firestore-python/issues/108) ([#109](https://github.com/googleapis/langchain-google-firestore-python/issues/109)) ([d76c1d2](https://github.com/googleapis/langchain-google-firestore-python/commit/d76c1d291636492070d10c9b6208cf4baede4149))
+
 ### Features
 
 * Remove support for Python 3.8 ([#107](https://github.com/googleapis/langchain-google-firestore-python/issues/107)) ([9b53093](https://github.com/googleapis/langchain-google-firestore-python/commit/9b5309385486ce44fa14431851508cfc20b144ba))
-
-
-### Bug Fixes
-
-* Change store_encodings flag to False in add_images method [#108](https://github.com/googleapis/langchain-google-firestore-python/issues/108) ([#109](https://github.com/googleapis/langchain-google-firestore-python/issues/109)) ([d76c1d2](https://github.com/googleapis/langchain-google-firestore-python/commit/d76c1d291636492070d10c9b6208cf4baede4149))
-* **deps:** Update python-nonmajor ([#94](https://github.com/googleapis/langchain-google-firestore-python/issues/94)) ([6ac1a76](https://github.com/googleapis/langchain-google-firestore-python/commit/6ac1a766f175c301d06f02ea554a7df192d0f179))
 
 
 ### Documentation
