@@ -195,7 +195,7 @@ def test_firestore_add_image_vectors(
     ids = ["1", "2"]
     metadatas = [{"image_uri": image_uri1}, {"image_uri": image_uri2}]
 
-    # Add vectors to Firestore
+    # Add vectors to Firestore without storing the base64 encoding
     firestore_store.add_images(image_paths, ids=ids)
 
     # Verify that the vectors were added to Firestore
@@ -203,13 +203,11 @@ def test_firestore_add_image_vectors(
     for doc, _id, image_path, metadata in zip(docs, ids, image_paths, metadatas):
         data = doc.to_dict()
         test_case.assertEqual(doc.id, _id)
-        test_case.assertEqual(
-            data["content"], firestore_store._encode_image(image_path)
-        )
+        test_case.assertEqual(data["content"], "")
         test_case.assertEqual(data["metadata"], metadata)
 
 
-def test_firestore_add_image_vectors_store_encodings_false(
+def test_firestore_add_image_vectors_store_encodings_true(
     test_case: TestCase,
     test_collection: str,
     client: firestore.Client,
@@ -223,21 +221,24 @@ def test_firestore_add_image_vectors_store_encodings_false(
         test_collection, image_embeddings, client=client
     )
 
-    # Use an image whose base64 encoding is too large to store to Firestore
-    image_uri = "gs://cloud-samples-data/vertex-ai/llm/prompts/landmark1.png"
+    image_uri = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png"
+
+    image_paths = [image_uri]
     ids = ["1"]
     metadatas = [{"image_uri": image_uri}]
 
-    # Add vectors to Firestore without storing the base64 encoding
-    firestore_store.add_images([image_uri], ids=ids, store_encodings=False)
+    # Add vectors to Firestore with base64 encoding stored as content
+    firestore_store.add_images([image_uri], ids=ids, store_encodings=True)
 
     # Verify that the vectors were added to Firestore and the content is empty
     docs = firestore_store.collection.stream()
-    for doc, _id, metadata in zip(docs, ids, metadatas):
+    for doc, _id, image_path, metadata in zip(docs, ids, image_paths, metadatas):
         data = doc.to_dict()
         test_case.assertEqual(doc.id, _id)
         test_case.assertEqual(data["metadata"], metadata)
-        test_case.assertEqual(data["content"], "")
+        test_case.assertEqual(
+            data["content"], firestore_store._encode_image(image_path)
+        )
 
 
 def test_firestore_update_vectors(

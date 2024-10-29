@@ -157,7 +157,7 @@ class FirestoreVectorStore(VectorStore):
         uris: Iterable[str],
         metadatas: Optional[List[dict]] = None,
         ids: Optional[List[str]] = None,
-        store_encodings: bool = True,
+        store_encodings: bool = False,
         **kwargs: Any,
     ) -> List[str]:
         """Adds image embeddings to Firestore vector store.
@@ -167,8 +167,8 @@ class FirestoreVectorStore(VectorStore):
             metadatas: The metadata to add to the vector store. Defaults to None.
             ids: The document ids to use for the new documents. If not provided, new
             document ids will be generated.
-            store_encoding: Whether to store base64 encoding of the image as content.
-            Set to false for large images to avoid Firebase document limits.
+            store_encodings: Whether to store base64 encoding of the image as content.
+            Defaults to False.
 
         Returns:
             List[str]: The list of document ids added to the vector store.
