@@ -565,6 +565,35 @@ def test_firestore_similarity_search_with_score_with_filters(
     test_case.assertEqual(doc.metadata["metadata"]["foo"], "bar")
 
 
+def test_firestore_similarity_search_with_score_custom_distance_field(
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    embeddings: FakeEmbeddings,
+):
+    """
+    Tests similarity_search_with_score with a custom distance_result_field.
+    """
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
+    texts = ["test_doc_alpha", "test_doc_beta"]
+    firestore_store.add_texts(texts, ids=["alpha_id", "beta_id"])
+
+    custom_field_name = "my_custom_distance"
+    k_val = 1
+
+    results = firestore_store.similarity_search_with_score(
+        "test_doc_alpha",
+        k=k_val,
+        distance_result_field=custom_field_name
+    )
+
+    test_case.assertEqual(len(results), k_val)
+    for doc, score in results:
+        test_case.assertTrue(isinstance(doc, Document))
+        test_case.assertTrue(isinstance(score, float))
+        
+
+
 def test_firestore_from_texts(
     test_case: TestCase,
     test_collection: str,
