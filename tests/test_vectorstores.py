@@ -519,7 +519,7 @@ def test_firestore_similarity_search_with_score(
 
     # Verify that the search results are as expected
     test_case.assertEqual(len(results), k)
-    
+
     # Check that each result is a tuple with a Document and a score
     for result in results:
         test_case.assertTrue(isinstance(result, tuple))
@@ -556,7 +556,7 @@ def test_firestore_similarity_search_with_score_with_filters(
 
     # Verify that the search results are as expected with the filter applied
     test_case.assertEqual(len(results), 1)
-    
+
     # Check that the result is a tuple with a Document and a score
     doc, score = results[0]
     test_case.assertTrue(isinstance(doc, Document))
@@ -582,16 +582,13 @@ def test_firestore_similarity_search_with_score_custom_distance_field(
     k_val = 1
 
     results = firestore_store.similarity_search_with_score(
-        "test_doc_alpha",
-        k=k_val,
-        distance_result_field=custom_field_name
+        "test_doc_alpha", k=k_val, distance_result_field=custom_field_name
     )
 
     test_case.assertEqual(len(results), k_val)
     for doc, score in results:
         test_case.assertTrue(isinstance(doc, Document))
         test_case.assertTrue(isinstance(score, float))
-        
 
 
 def test_firestore_from_texts(
