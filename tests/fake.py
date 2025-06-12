@@ -12,4 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.5.0"
+from typing import List
+
+from langchain_community.embeddings import FakeEmbeddings
+
+
+class FakeImageEmbeddings(FakeEmbeddings):
+    """Fake embedding model for images."""
+
+    def embed_image(self, image_path: str) -> List[float]:
+        return self._get_embedding()

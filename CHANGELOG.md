@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.5.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.4.0...v0.5.0) (2024-10-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* Change store_encodings flag to False in add_images method [#108](https://github.com/googleapis/langchain-google-firestore-python/issues/108) ([#109](https://github.com/googleapis/langchain-google-firestore-python/issues/109)) ([d76c1d2](https://github.com/googleapis/langchain-google-firestore-python/commit/d76c1d291636492070d10c9b6208cf4baede4149))
+
+### Features
+
+* Remove support for Python 3.8 ([#107](https://github.com/googleapis/langchain-google-firestore-python/issues/107)) ([9b53093](https://github.com/googleapis/langchain-google-firestore-python/commit/9b5309385486ce44fa14431851508cfc20b144ba))
+
+
+### Documentation
+
+* Add documentation on add_images method ([79c1937](https://github.com/googleapis/langchain-google-firestore-python/commit/79c19379985f7474b92766ee7f22386e772c2747))
+
+## [0.4.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.3.0...v0.4.0) (2024-09-27)
+
+
+### Features
+
+* Added image support to FirestoreVectorStore along with basic tests ([#97](https://github.com/googleapis/langchain-google-firestore-python/issues/97)) ([b8fc685](https://github.com/googleapis/langchain-google-firestore-python/commit/b8fc6853201b17523f78e3491073293df9127a38))
+
+
+### Bug Fixes
+
+* Vectorstore user agent ([#98](https://github.com/googleapis/langchain-google-firestore-python/issues/98)) ([765232c](https://github.com/googleapis/langchain-google-firestore-python/commit/765232cb5278079bf106e570b40b889931429193))
+
+
+### Documentation
+
+* Update README.rst title size ([#88](https://github.com/googleapis/langchain-google-firestore-python/issues/88)) ([36ed233](https://github.com/googleapis/langchain-google-firestore-python/commit/36ed2339130c247159d8b88e4b4aabbe775021b8))
+
 ## [0.3.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.2.1...v0.3.0) (2024-05-16)
 
 

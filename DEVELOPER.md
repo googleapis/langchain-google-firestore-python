@@ -18,7 +18,13 @@ Learn more by reading [How should I write my commits?](https://github.com/google
 
 ### Run tests locally
 
-1. Run pytest to automatically run all tests:
+1. Before running tests, install `langchain_google_firestore` locally:
+
+    ```bash
+    pip install -e .
+    ```
+
+2. Run pytest to automatically run all tests:
 
     ```bash
     pytest
@@ -35,8 +41,8 @@ These tests are registered as required tests in `.github/sync-repo-settings.yaml
 Cloud Build triggers (for Python versions 3.8 to 3.11) were created with the following specs:
 
 ```YAML
-name: integration-test-pr-py38
-description: Run integration tests on PR for Python 3.8
+name: integration-test-pr-py39
+description: Run integration tests on PR for Python 3.9
 filename: integration.cloudbuild.yaml
 github:
   name: langchain-google-firestore-python
@@ -50,7 +56,7 @@ ignoredFiles:
   - .github/**
   - "*.md"
 substitutions:
-  _VERSION: "3.8"
+  _VERSION: "3.9"
 ```
 
 Use `gcloud builds triggers import --source=trigger.yaml` to create triggers via the command line
@@ -75,7 +81,7 @@ To run Cloud Build tests on GitHub from external contributors, ie RenovateBot, c
 #### Code Coverage
 Please make sure your code is fully tested. The Cloud Build integration tests are run with the `pytest-cov` code coverage plugin. They fail for PRs with a code coverage less than the threshold specified in `.coveragerc`.  If your file is inside the main module and should be ignored by code coverage check, add it to the `omit` section of `.coveragerc`.
 
-Check for code coverage report in any Cloud Build integration test log. 
+Check for code coverage report in any Cloud Build integration test log.
 Here is a breakdown of the report:
 - `Stmts`:  lines of executable code (statements).
 - `Miss`: number of lines not covered by tests.
