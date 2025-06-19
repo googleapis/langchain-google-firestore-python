@@ -3,4 +3,4 @@ langchain-community==0.3.3
 google-cloud-firestore==2.19.0
 google-cloud-storage==2.18.2
 more-itertools==10.5.0
-requests==2.32.3
+requests==2.32.4
