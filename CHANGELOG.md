@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.5.0...v0.5.1) (2025-06-22)
+
+
+### Bug Fixes
+
+* **deps:** Update dependency black to v25 ([#118](https://github.com/googleapis/langchain-google-firestore-python/issues/118)) ([3aa2849](https://github.com/googleapis/langchain-google-firestore-python/commit/3aa284972f9fa6eefdac44943f78cdfd8145ddb4))
+* **deps:** Update dependency google-cloud-storage to v3 ([#119](https://github.com/googleapis/langchain-google-firestore-python/issues/119)) ([7bdf23c](https://github.com/googleapis/langchain-google-firestore-python/commit/7bdf23c333349764e06f615a75ac61c5cc8ebca3))
+* **deps:** Update dependency pytest-cov to v6 ([#110](https://github.com/googleapis/langchain-google-firestore-python/issues/110)) ([8d3d54b](https://github.com/googleapis/langchain-google-firestore-python/commit/8d3d54be23778291f4e0f507cbc3ed1af8895884))
+
 ## [0.5.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.4.0...v0.5.0) (2024-10-29)
 
 
