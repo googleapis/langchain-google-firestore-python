@@ -39,7 +39,7 @@ Changelog = "https://github.com/googleapis/langchain-google-firestore-python/blo
 [project.optional-dependencies]
 test = [
     "black[jupyter]==25.1.0",
-    "isort==5.13.2",
+    "isort==6.0.0",
     "mypy==1.13.0",
     "pytest-asyncio==1.0.0",
     "pytest==8.3.3",
