@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.5.0...v0.5.1) (2025-07-25)
+
+
+### Bug Fixes
+
+* **deps:** Update dependency isort to v6 ([#117](https://github.com/googleapis/langchain-google-firestore-python/issues/117)) ([6a11a7c](https://github.com/googleapis/langchain-google-firestore-python/commit/6a11a7c6b8a0e8fe6deff28f882a21d1609231af))
+
 ## [0.5.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.4.0...v0.5.0) (2024-10-29)
 
 
