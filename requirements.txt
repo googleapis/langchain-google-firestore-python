@@ -1,4 +1,4 @@
-langchain-core==0.3.80
+langchain-core==0.3.81
 langchain-community==0.3.27
 google-cloud-firestore==2.21.0
 google-cloud-storage==3.2.0
