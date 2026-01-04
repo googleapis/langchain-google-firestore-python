@@ -240,6 +240,7 @@ class FirestoreVectorStore(VectorStore):
         query: List[float],
         k: int = DEFAULT_TOP_K,
         filters: Optional[BaseFilter] = None,
+        distance_result_field: Optional[str] = None,
     ) -> List[DocumentSnapshot]:
         _filters = filters or self.filters
 
@@ -253,6 +254,7 @@ class FirestoreVectorStore(VectorStore):
             query_vector=Vector(query),
             distance_measure=self.distance_strategy,
             limit=k,
+            distance_result_field=distance_result_field,
         )
 
         return results.get()
@@ -412,6 +414,26 @@ class FirestoreVectorStore(VectorStore):
             k=k,
         )
         return [convert_firestore_document(doc_results[i]) for i in mmr_doc_indexes]
+
+    def similarity_search_with_score(
+        self, query, k=4, filters: Optional[BaseFilter] = None, **kwargs
+    ):
+        distance_result_field = kwargs.pop("distance_result_field", None) or "distance"
+        docs = self._similarity_search(
+            self.embedding_service.embed_query(query),
+            k,
+            filters=filters,
+            distance_result_field=distance_result_field,
+        )
+        return [
+            (
+                convert_firestore_document(
+                    doc, page_content_fields=[self.content_field]
+                ),
+                doc.to_dict()[distance_result_field],
+            )
+            for doc in docs
+        ]
 
     @classmethod
     def from_texts(
