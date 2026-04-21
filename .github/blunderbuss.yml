@@ -1,4 +1,4 @@
 assign_issues:
-  - googleapis/langchain-firestore
+  - googleapis/langchain-firestore-team
 assign_prs:
-  - googleapis/langchain-firestore
+  - googleapis/langchain-firestore-team
