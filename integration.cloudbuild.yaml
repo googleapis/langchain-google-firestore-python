@@ -29,7 +29,7 @@ steps:
     args: ["-m", "pytest", "--cov=langchain_google_firestore", "--cov-config=.coveragerc", "tests/"]
 
 substitutions:
-  _VERSION: "3.9"
+  _VERSION: "3.10"
 
 options:
   dynamicSubstitutions: true
