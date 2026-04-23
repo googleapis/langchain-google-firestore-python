@@ -2,5 +2,5 @@ langchain-core==0.3.81
 langchain-community==0.3.27
 google-cloud-firestore==2.21.0
 google-cloud-storage==3.2.0
-more-itertools==10.7.0
+more-itertools==11.0.1
 requests==2.32.4
