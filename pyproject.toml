@@ -4,24 +4,23 @@ dynamic = ["version"]
 description = "LangChain integrations for Google Cloud Firestore"
 readme = "README.rst"
 license = {file = "LICENSE"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "Google LLC", email = "googleapis-packages@google.com"}
 ]
 dependencies = [
-    "langchain-core>=0.1.1, <1.0.0",
-    "langchain-community>=0.0.18, <1.0.0",
+    "langchain-core>=1.0.0, <2.0.0",
+    "langchain-community>=0.3.29, <1.0.0",
     "google-cloud-firestore>=2.16.0, <3.0.0",
     "google-cloud-storage>=3.2.0, <3.3.0",
     "more_itertools>=11.0.1, <11.1.0",
-    "requests>=2.32.3, <2.33.0"
+    "requests>=2.33.0, <2.33.1"
 ]
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -38,12 +37,12 @@ Changelog = "https://github.com/googleapis/langchain-google-firestore-python/blo
 
 [project.optional-dependencies]
 test = [
-    "black[jupyter]==25.1.0",
-    "isort==6.0.1",
+    "black[jupyter]==26.3.1",
+    "isort==8.0.0",
     "mypy==1.17.1",
     "pytest-asyncio==1.1.0",
     "pytest==8.4.1",
-    "pytest-cov==6.2.1"
+    "pytest-cov==7.0.0"
 ]
 
 [build-system]
@@ -51,7 +50,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-target-version = ['py39']
+target-version = ['py310']
 
 [tool.isort]
 profile = "black"
