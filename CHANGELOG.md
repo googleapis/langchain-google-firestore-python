@@ -1,6 +1,17 @@
 # Changelog
 
 
+## [1.0.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.5.0...v1.0.0) (2026-06-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** Update to langchain-core 1.0, drop python 3.9 support. Fixes #151. ([#158](https://github.com/googleapis/langchain-google-firestore-python/issues/158))
+
+### Miscellaneous Chores
+
+* **deps:** Update to langchain-core 1.0, drop python 3.9 support. Fixes [#151](https://github.com/googleapis/langchain-google-firestore-python/issues/151). ([#158](https://github.com/googleapis/langchain-google-firestore-python/issues/158)) ([4fb019d](https://github.com/googleapis/langchain-google-firestore-python/commit/4fb019d9b21da8606d3c040c1fefd0260ec9f903))
+
 ## [0.6.0](https://github.com/googleapis/langchain-google-firestore-python/compare/v0.5.0...v0.6.0) (2025-01-02)
 
 * Remove support for Python 3.9 ([#151](https://github.com/googleapis/langchain-google-firestore-python/issues/151))
