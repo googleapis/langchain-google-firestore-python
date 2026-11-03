@@ -495,6 +495,102 @@ def test_firestore_max_marginal_relevance_by_vector(
     test_case.assertEqual(len(results), k)
 
 
+def test_firestore_similarity_search_with_score(
+    test_case: TestCase,
+    test_collection: str,
+    client,
+    embeddings: FakeEmbeddings,
+):
+    """
+    An end-to-end test for similarity search with score in FirestoreVectorStore.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
+
+    texts = ["test1", "test2"]
+    k = 2
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(texts, ids=["1", "2"])
+
+    # Perform similarity search with score
+    results = firestore_store.similarity_search_with_score("test1", k)
+
+    # Verify that the search results are as expected
+    test_case.assertEqual(len(results), k)
+
+    # Check that each result is a tuple with a Document and a score
+    for result in results:
+        test_case.assertTrue(isinstance(result, tuple))
+        test_case.assertEqual(len(result), 2)
+        test_case.assertTrue(isinstance(result[0], Document))
+        test_case.assertTrue(isinstance(result[1], float))
+
+
+def test_firestore_similarity_search_with_score_with_filters(
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    embeddings: FakeEmbeddings,
+):
+    """
+    An end-to-end test for similarity search with score in FirestoreVectorStore with filters.
+    Requires an index on the filter field in Firestore.
+    """
+
+    # Create FirestoreVectorStore instance
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
+
+    # Add vectors to Firestore
+    firestore_store.add_texts(
+        ["test1", "test2"],
+        ids=["1", "2"],
+        metadatas=[{"foo": "bar"}, {"foo": "baz"}],
+    )
+
+    # Perform similarity search with score and filter
+    results = firestore_store.similarity_search_with_score(
+        "test1", k=2, filters=FieldFilter("metadata.foo", "==", "bar")
+    )
+
+    # Verify that the search results are as expected with the filter applied
+    test_case.assertEqual(len(results), 1)
+
+    # Check that the result is a tuple with a Document and a score
+    doc, score = results[0]
+    test_case.assertTrue(isinstance(doc, Document))
+    test_case.assertTrue(isinstance(score, float))
+    test_case.assertEqual(doc.page_content, "test1")
+    test_case.assertEqual(doc.metadata["metadata"]["foo"], "bar")
+
+
+def test_firestore_similarity_search_with_score_custom_distance_field(
+    test_case: TestCase,
+    test_collection: str,
+    client: firestore.Client,
+    embeddings: FakeEmbeddings,
+):
+    """
+    Tests similarity_search_with_score with a custom distance_result_field.
+    """
+    firestore_store = FirestoreVectorStore(test_collection, embeddings, client=client)
+    texts = ["test_doc_alpha", "test_doc_beta"]
+    firestore_store.add_texts(texts, ids=["alpha_id", "beta_id"])
+
+    custom_field_name = "my_custom_distance"
+    k_val = 1
+
+    results = firestore_store.similarity_search_with_score(
+        "test_doc_alpha", k=k_val, distance_result_field=custom_field_name
+    )
+
+    test_case.assertEqual(len(results), k_val)
+    for doc, score in results:
+        test_case.assertTrue(isinstance(doc, Document))
+        test_case.assertTrue(isinstance(score, float))
+
+
 def test_firestore_from_texts(
     test_case: TestCase,
     test_collection: str,
